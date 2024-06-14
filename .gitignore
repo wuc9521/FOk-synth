@@ -2,4 +2,5 @@
 .idea/
 .DS_Store
 lib/
+out/
 .java-version
