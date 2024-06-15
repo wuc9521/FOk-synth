@@ -7,9 +7,7 @@ import utils.Pair;
  */
 public interface Automaton<SType, IType> {
     
-    /**
-     * This is an interface that represents a state in an automaton.
-     */
+
     public interface State<SType> {
         public boolean isAccepting(); // check if the state is accepting
     }

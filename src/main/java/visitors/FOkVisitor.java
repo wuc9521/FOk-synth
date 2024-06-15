@@ -1,6 +1,7 @@
+package visitors;
 import antlr.*;
 import antlr.FOkParser.*;
-import org.antlr.v4.runtime.tree.TerminalNode; 
+import org.antlr.v4.runtime.tree.*; 
 
 public class FOkVisitor extends FOkParserBaseVisitor<Void> {
     @Override
