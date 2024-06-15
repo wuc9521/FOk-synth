@@ -1,40 +1,33 @@
 parser grammar FOkParser;
 
-options { tokenVocab=FOkLexer; } // Use the tokens from the lexer
+options {
+    tokenVocab=FOkLexer;
+}
 
-// Entry point
-formula : implication EOF ;
+prog
+    : COMMENT? sentence+ ENDLINE? EOF   
+    ;
 
-// Logical expressions
-implication
-    : disjunction (IMPLIES disjunction)* ;
+sentence
+    : formula
+    ;
     
-disjunction
-    : conjunction (OR conjunction)* ;
-    
-conjunction
-    : negation (AND negation)* ;
-    
-negation
-    : NOT negation
-    | atom ;
-    
-atom
-    : LPAREN formula RPAREN
-    | predicate
-    | quantifier ;
-    
-predicate
-    : PREDICATE LPAREN termList RPAREN ;
-    
-termList
-    : term (COMMA term)* ;
-    
+formula 
+    : NOT formula                      
+    | formula (IFF | IMPLIES | AND | OR) formula 
+    | (FORALL | EXISTS) VARIABLE DOT LPAREN formula RPAREN
+    | RELATION (LPAREN term (COMMA term)* RPAREN)?
+    | term EQUALS term        
+    | value                    
+	| LPAREN formula RPAREN    
+    ;
+
 term
-    : VARIABLE
-    | CONSTANT
-    | FUNCTION LPAREN termList RPAREN ;
-
-quantifier
-    : FORALL VARIABLE DOT formula
-    | EXISTS VARIABLE DOT formula ;
+    : FUNC LPAREN (term (COMMA term)*)? RPAREN
+    | CONST                      
+    | VARIABLE     
+    ;
+    
+value
+    : TRUE | FALSE
+    ;

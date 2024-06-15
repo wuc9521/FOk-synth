@@ -2,7 +2,7 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 public class Main {
     public static void main(String[] args) {
-        String input = "forall x. (P(x) and Q(x)) implies R(x)";
+        String input = "forall x. (exists y . (R(x) <-> S(y)))";
         CharStream charStream = CharStreams.fromString(input);
         FOkLexer lexer = new FOkLexer(charStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);

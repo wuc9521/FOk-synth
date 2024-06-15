@@ -1,31 +1,23 @@
 lexer grammar FOkLexer;
 
-// Keywords (Quantifiers and Logical Connectives)
-FORALL : 'forall' | '∀';
-EXISTS : 'exists' | '∃';
-AND    : 'and' | '∧';
-OR     : 'or' | '∨';
-NOT    : 'not' | '¬';
-IMPLIES: 'implies' | '→';
-IFF    : 'iff' | '↔';
-
-
-// Punctuation
-LPAREN : '(';
-RPAREN : ')';
-COMMA  : ',';
-DOT    : '.';
-
-
-// Variables and Constants
-VARIABLE : [a-z][a-zA-Z0-9_]*;
-CONSTANT : [A-Z][a-zA-Z0-9_]*;
-
-// Predicates and Functions
-PREDICATE : [A-Z][a-zA-Z0-9_]*;
-FUNCTION  : [a-z][a-zA-Z0-9_]*;
-
-// Whitespace and Comments
-WS : [ \t\r\n]+ -> skip;
-COMMENT : '/*' .*? '*/' -> skip;
-LINE_COMMENT : '//' ~[\r\n]* -> skip;
+LPAREN: '(';
+RPAREN: ')';
+EQUALS: '=';
+TRUE: [Tt][Rr][Uu][Ee];
+FALSE: [Ff][Aa][Ll][Ss][Ee];
+FORALL: [fF][Oo][Rr][Aa][Ll][Ll];
+EXISTS: [Ee][Xx][Ii][Ss][Tt][Ss];
+AND: '&';
+OR: '|';
+IMPLIES: '->';   
+IFF: '<->';
+NOT: '~';
+CONST: '#' [A-Za-z0-9]+;
+FUNC: '_' [A-Za-z0-9]+;
+RELATION: [A-Z0-9]+;       
+VARIABLE: [a-zA-Z][a-zA-Z0-9]*;
+DOT: '.';
+COMMA: ',';
+ENDLINE: ('\r'|'\n')+ -> skip;
+WS: [ \t]+ -> skip;
+COMMENT: '//' ~('\t'|'\r'|'\n')*  '\r'? '\n' -> skip;

@@ -17,18 +17,21 @@ lib/$(ANTLR4_JAR):
 clean:
 	rm -rf lib $(OUT)
 
-antlr:
+antlr: lib/$(ANTLR4_JAR) $(PFILE) $(LFILE)
 	$(ANTLR) $(LFILE)
 	$(ANTLR) $(PFILE)
 	rm -rf $(AG)/*.tokens
 	rm -rf $(AG)/*.interp
 	mv $(AG)/*.java $(MAIN)
 
-compile:
+compile: antlr
 	mkdir -p $(OUT)/class/$(MAIN)
 	javac -cp lib/$(ANTLR4_JAR):$(MAIN) -d $(OUT)/class/$(MAIN) $(MAIN)/Main.java
 
-run:
+run: compile
+	@echo ""
+	@echo "Running..."
 	java -cp $(OUT)/class:lib/$(ANTLR4_JAR) Main
+	@echo "Done."
 
 .PHONY: all clean antlr run compile
