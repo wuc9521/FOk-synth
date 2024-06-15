@@ -1,6 +1,6 @@
 ANTLR4_JAR=antlr-4.9.1-complete.jar
 ANTLR4_URL=https://www.antlr.org/download/$(ANTLR4_JAR)
-ANTLR = java -jar lib/$(ANTLR4_JAR) -Dlanguage=Java
+ANTLR = java -jar lib/$(ANTLR4_JAR) -Dlanguage=Java -visitor -no-listener
 AG=src/main/ag
 PFILE = $(AG)/FOkParser.g4
 LFILE = $(AG)/FOkLexer.g4
@@ -18,11 +18,11 @@ clean:
 	rm -rf lib $(OUT)
 
 antlr: lib/$(ANTLR4_JAR) $(PFILE) $(LFILE)
-	$(ANTLR) $(LFILE)
-	$(ANTLR) $(PFILE)
+	$(ANTLR) $(LFILE) -package antlr
+	$(ANTLR) $(PFILE) -package antlr
 	rm -rf $(AG)/*.tokens
 	rm -rf $(AG)/*.interp
-	mv $(AG)/*.java $(MAIN)
+	mv $(AG)/*.java $(MAIN)/antlr
 
 compile: antlr
 	mkdir -p $(OUT)/class/$(MAIN)

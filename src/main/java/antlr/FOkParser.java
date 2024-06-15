@@ -1,4 +1,5 @@
 // Generated from src/main/ag/FOkParser.g4 by ANTLR 4.9.1
+package antlr;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
@@ -108,12 +109,9 @@ public class FOkParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_prog; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).enterProg(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).exitProg(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof FOkParserVisitor ) return ((FOkParserVisitor<? extends T>)visitor).visitProg(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -182,12 +180,9 @@ public class FOkParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_sentence; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).enterSentence(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).exitSentence(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof FOkParserVisitor ) return ((FOkParserVisitor<? extends T>)visitor).visitSentence(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -213,6 +208,8 @@ public class FOkParser extends Parser {
 	}
 
 	public static class FormulaContext extends ParserRuleContext {
+		public Token qop;
+		public Token op;
 		public TerminalNode NOT() { return getToken(FOkParser.NOT, 0); }
 		public List<FormulaContext> formula() {
 			return getRuleContexts(FormulaContext.class);
@@ -250,12 +247,9 @@ public class FOkParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_formula; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).enterFormula(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).exitFormula(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof FOkParserVisitor ) return ((FOkParserVisitor<? extends T>)visitor).visitFormula(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -290,9 +284,10 @@ public class FOkParser extends Parser {
 			case EXISTS:
 				{
 				setState(28);
+				((FormulaContext)_localctx).qop = _input.LT(1);
 				_la = _input.LA(1);
 				if ( !(_la==FORALL || _la==EXISTS) ) {
-				_errHandler.recoverInline(this);
+					((FormulaContext)_localctx).qop = (Token)_errHandler.recoverInline(this);
 				}
 				else {
 					if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
@@ -394,9 +389,10 @@ public class FOkParser extends Parser {
 					setState(60);
 					if (!(precpred(_ctx, 6))) throw new FailedPredicateException(this, "precpred(_ctx, 6)");
 					setState(61);
+					((FormulaContext)_localctx).op = _input.LT(1);
 					_la = _input.LA(1);
 					if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << AND) | (1L << OR) | (1L << IMPLIES) | (1L << IFF))) != 0)) ) {
-					_errHandler.recoverInline(this);
+						((FormulaContext)_localctx).op = (Token)_errHandler.recoverInline(this);
 					}
 					else {
 						if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
@@ -446,12 +442,9 @@ public class FOkParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_term; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).enterTerm(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).exitTerm(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof FOkParserVisitor ) return ((FOkParserVisitor<? extends T>)visitor).visitTerm(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -537,12 +530,9 @@ public class FOkParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_value; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).enterValue(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FOkParserListener ) ((FOkParserListener)listener).exitValue(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof FOkParserVisitor ) return ((FOkParserVisitor<? extends T>)visitor).visitValue(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
