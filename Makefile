@@ -13,6 +13,7 @@ LFILE = $(G4)/FOkLexer.g4
 MAIN=src/main/java
 TEST=src/test/java
 OUT = out/class
+CP = .:$(OUT):lib/$(ANTLR4_JAR):lib/$(JUNIT_JAR):lib/$(HAMCREST_JAR):lib/$(LOMBOK_JAR)
 
 all: lib
 	make antlr
@@ -36,7 +37,7 @@ antlr: lib/$(ANTLR4_JAR) $(PFILE) $(LFILE)
 
 compile: antlr
 	mkdir -p $(OUT)
-	javac -cp lib/$(ANTLR4_JAR):$(MAIN) -d $(OUT) $(MAIN)/Main.java
+	javac -cp $(CP):$(MAIN) -d $(OUT) $(MAIN)/Main.java
 
 run: compile
 	@echo ""
@@ -48,11 +49,11 @@ test: compile
 	@echo ""
 	@echo "Running tests..."
 	mkdir -p $(OUT)
-	javac -cp .:$(OUT):lib/$(ANTLR4_JAR):lib/$(JUNIT_JAR):lib/$(HAMCREST_JAR) -d $(OUT) $(TEST)/SimpleTest.java 
-	java -cp $(OUT):lib/$(ANTLR4_JAR):lib/$(JUNIT_JAR):lib/$(HAMCREST_JAR) org.junit.runner.JUnitCore SimpleTest
+	javac -cp $(CP) -d $(OUT) $(TEST)/SimpleTest.java 
+	java -cp $(CP) org.junit.runner.JUnitCore SimpleTest
 	@echo "Done."
 
 wc: 
-	@wc -l `find . -name '[^FO]*.java' -or -name '*.g4' -or -name 'Makefile'`
+	@wc -l `find . -name '[^FOk]*.java' -or -name '*.g4' -or -name 'Makefile' -or -name 'FOkVisitor.java'`
 
 .PHONY: all clean antlr run compile test wc
