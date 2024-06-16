@@ -1,8 +1,9 @@
 import interfaces.*;
 import visitors.TransitionVisitor;
 import java.util.*;
-import javax.management.ConstructorParameters;
 import lombok.*;
+import utils.TupleGenerator;
+
 import org.antlr.v4.runtime.tree.*;
 
 @AllArgsConstructor
@@ -20,6 +21,23 @@ public class TreeAutomaton extends Automaton<Assignment, ParseTree> {
     private TreeState currentState; // the current state of the automaton
 
 
+    public TreeAutomaton(List<String> vars, Structure<?> structure) {
+        this.states = new HashSet<>();
+
+        // initialize all the states by invoking the generateTuple method
+        TupleGenerator.generateKTuples(vars.size(), new ArrayList<>(structure.domain)).forEach(tuple -> {
+            HashMap<String, Structure<?>.Element> kvMap = new HashMap<>();
+            for (int i = 0; i < vars.size(); i++) {
+                kvMap.put(vars.get(i), (Structure<?>.Element)tuple.get(i));
+            }
+            this.states.add(
+                new TreeState(
+                    new Assignment(kvMap)
+                )
+            );
+        });
+    }
+
     public TreeAutomaton(ParseTree input, Set<TreeState> states, TreeState initialState) {
         this.states = states;
         this.initialState = initialState;
@@ -29,8 +47,10 @@ public class TreeAutomaton extends Automaton<Assignment, ParseTree> {
     @AllArgsConstructor
     public class TreeState implements Automaton.State<Assignment> {
         private boolean isAccepting = false; // whether the state is accepting
-        @ConstructorParameters({"assignment"})
-        public TreeState(Assignment assignment) {}
+        private Assignment allVarAsnmnt; // the assignment of all the variables
+        public TreeState(Assignment assignment) {
+            this.allVarAsnmnt = assignment;
+        }
 
         @Override
         public boolean isAccepting() {
@@ -49,7 +69,7 @@ public class TreeAutomaton extends Automaton<Assignment, ParseTree> {
         return currentState;
     }
 
-    public void addState(State<Assignment> state) {
+    public void addState(TreeState state) {
         this.states.add((TreeState) state);
     }
 

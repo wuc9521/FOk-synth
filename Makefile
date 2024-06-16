@@ -48,9 +48,9 @@ run: compile
 test: compile
 	@echo ""
 	@echo "Running tests..."
-	mkdir -p $(OUT)
-	javac -cp $(CP) -d $(OUT) $(TEST)/SimpleTest.java 
-	java -cp $(CP) org.junit.runner.JUnitCore SimpleTest
+	@mkdir -p $(OUT)
+	@javac -cp $(CP) -d $(OUT) $(TEST)/SimpleTest.java 
+	@java -cp $(CP) org.junit.runner.JUnitCore SimpleTest
 	@echo "Done."
 
 wc: 

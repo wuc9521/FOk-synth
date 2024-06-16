@@ -7,7 +7,6 @@ import lombok.*;
  */
 @Getter @Setter
 public abstract class Automaton<SType, IType> {
-    
     public interface State<SType> {
         public boolean isAccepting(); // check if the state is accepting
     }

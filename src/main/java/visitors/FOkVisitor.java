@@ -10,12 +10,14 @@ import java.util.*;
 import utils.*;
 import org.antlr.v4.runtime.Token;
 
-public class FOkVisitor extends FOkParserBaseVisitor<Void> {
+
+public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     private boolean value = false;
-    private Structure<?> structure;
+    private Structure<T> structure;
 
     // the hashmap to store the bound variables in the formula.
     private HashMap<TerminalNode, Pair<Token, TerminalNode>> bdVarTable = new HashMap<>();
+    private Set<TerminalNode> allVarSet = new HashSet<>(); // collect all the variables in the formula
 
     public boolean getFormulaVal(ParseTree tree) {
         this.visit(tree);
@@ -27,7 +29,7 @@ public class FOkVisitor extends FOkParserBaseVisitor<Void> {
         return tree.accept(this);
     }
 
-    public Void visit(ParseTree tree, Structure<?> structure) {
+    public Void visit(ParseTree tree, Structure<T> structure) {
         this.structure = structure;
         return tree.accept(this);
     }
@@ -47,8 +49,24 @@ public class FOkVisitor extends FOkParserBaseVisitor<Void> {
         return visitChildren(ctx);
     }
 
+        /**
+     * @param ctx The context of the formula.
+     *            formula
+     *            1 : NOT formula
+     *            2 | formula op=(IFF | IMPLIES | AND | OR) formula
+     *            3 | qop=(FORALL | EXISTS) VARIABLE DOT LPAREN formula RPAREN
+     *            4 | RELATION (LPAREN term (COMMA term)* RPAREN)?
+     *            5 | term EQUALS term
+     *            6 | value
+     *            7 | LPAREN formula RPAREN
+     *            ;
+     */
     @Override
     public Void visitFormula(FormulaContext ctx) {
+        FormulaContext fCtx = (FormulaContext) ctx;
+        if (fCtx.qop != null) {
+            this.allVarSet.add(fCtx.VARIABLE());
+        } 
         return visitChildren(ctx);
     }
 
@@ -66,13 +84,8 @@ public class FOkVisitor extends FOkParserBaseVisitor<Void> {
             // when first tranverse to the variable, we need to find the nearest quantifier and put it in our hashmap.
             RuleContext parent = ctx.getParent();
             // since variable can be reused, we consider the variable in the nearest quantifier.
-            while (parent != null) {
-                while (!(parent instanceof FormulaContext)) {
-                    parent = parent.getParent();
-                }
-                if (((FormulaContext) parent).qop != null) {
-                    break;
-                }
+            while (parent != null && (!(parent instanceof FormulaContext) || ((FormulaContext) parent).qop == null)){
+                parent = parent.getParent();
             }
             FormulaContext fCtx = (FormulaContext) parent;
             bdVarTable.put(
@@ -107,9 +120,21 @@ public class FOkVisitor extends FOkParserBaseVisitor<Void> {
     public boolean calFormulaVal(ParserRuleContext ctx) {
         FormulaContext fCtx = (FormulaContext) ctx;
         ValueContext vCtx = (ValueContext) ctx;
-        if (ctx.getChild(0) == fCtx.NOT()) { // case 1
+        if (ctx.getChild(0) == fCtx.NOT()) { // case 1: checked
             return !calFormulaVal(fCtx.formula(0));
-        } else if (fCtx.op != null) { // case 2
+        } else if (fCtx.op != null) { // case 2: checked
+            switch (fCtx.op.getType()) {
+                case FOkLexer.IFF:
+                    return calFormulaVal(fCtx.formula(0)) == calFormulaVal(fCtx.formula(1));
+                case FOkLexer.IMPLIES:
+                    return !calFormulaVal(fCtx.formula(0)) || calFormulaVal(fCtx.formula(1));
+                case FOkLexer.AND:
+                    return calFormulaVal(fCtx.formula(0)) && calFormulaVal(fCtx.formula(1));
+                case FOkLexer.OR:
+                    return calFormulaVal(fCtx.formula(0)) || calFormulaVal(fCtx.formula(1));
+                default:
+                    break;
+            }
         } else if (fCtx.qop != null) { // case 3
             switch (fCtx.qop.getType()) {
                 case FOkParser.FORALL:
@@ -120,14 +145,15 @@ public class FOkVisitor extends FOkParserBaseVisitor<Void> {
                 default:
                     break;
             }
-        } else if (ctx.getChild(0) == fCtx.RELATION()) { // case 4
+        } else if (ctx.getChild(0) == fCtx.RELATION()) { // case 4: 
             for (int i = 0; i < ctx.getChildCount(); i++) { // discuss about the arity of the relation
                 System.out.println(ctx.getChild(i));
             }
-        } else if (ctx.getChild(0) == fCtx.term()) { // case 5
-        } else if (ctx.getChild(0) == fCtx.value()) { // case 6
+        } else if (ctx.getChild(0) == fCtx.term()) { // case 5: checked
+            return calTermVal(fCtx.term(0)).equals(calTermVal(fCtx.term(1)));
+        } else if (ctx.getChild(0) == fCtx.value()) { // case 6: checked
             return vCtx.getRuleIndex() == FOkParser.TRUE;
-        } else if (ctx.getChild(0) == fCtx.LPAREN()) { // case 7
+        } else if (ctx.getChild(0) == fCtx.LPAREN()) { // case 7: checked
             return calFormulaVal(fCtx.formula(0));
         } 
         return false;
@@ -141,8 +167,8 @@ public class FOkVisitor extends FOkParserBaseVisitor<Void> {
      *            3 | CONST
      *            ;
      */
-    private Structure<?>.Const calTermVal(ParserRuleContext ctx) {
-        if (ctx.getChild(0) == ((TermContext) ctx).FUNC()) { // case 1
+    private T calTermVal(ParserRuleContext ctx) {
+        if (ctx.getChild(0) == ((TermContext) ctx).FUNC()) { // case 1: checked
             // 我们假设在这个简化的FOk模型中, 不会出现函数.
             return null;
         } else if (ctx.getChild(0) == ((TermContext) ctx).VARIABLE()) { // case 2
@@ -151,12 +177,10 @@ public class FOkVisitor extends FOkParserBaseVisitor<Void> {
             if (pair == null) {
                 return null;
             }
-        } else if (ctx.getChild(0) == ((TermContext) ctx).CONST()) { // case 3
+        } else if (ctx.getChild(0) == ((TermContext) ctx).CONST()) { // case 3: checked
             // get the value of the const
             TermContext tCtx = (TermContext) ctx;
-            return this.structure.constants.stream()
-                    .filter(c -> c.getName().equals(tCtx.CONST().getText()))
-                    .findFirst().get();
+            return this.structure.constants.get(tCtx.CONST().getText());
         }
         return null;
     }

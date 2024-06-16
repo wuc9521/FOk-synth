@@ -1,7 +1,18 @@
-import org.antlr.v4.runtime.Vocabulary;
+import interfaces.Structure;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-import antlr.*;
+import java.util.*;
 
-public class Assignment {
-    Vocabulary vobab = FOkLexer.VOCABULARY;
+@AllArgsConstructor
+@Setter
+@Getter
+public class Assignment{
+    private Map<String, Structure<?>.Element> kvMap;
+    private int size;
+    public Assignment(Map<String, Structure<?>.Element> kvMap) {
+        this.kvMap = kvMap;
+        this.size = kvMap.size();
+    }
 }

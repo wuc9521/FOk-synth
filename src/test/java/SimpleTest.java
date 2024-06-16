@@ -2,11 +2,11 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 import java.util.Scanner;
-import org.antlr.v4.misc.Graph;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import antlr.*;
 import structures.GraphStructure;
+import structures.GraphStructure.Vertex;
 import visitors.FOkVisitor;
 import visitors.TransitionVisitor;
 
@@ -34,11 +34,20 @@ public class SimpleTest {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
-        // TreeAutomaton automaton = new TreeAutomaton(
-        //         null,
-        //         null,
-        //         null,
-        //         null);
+        GraphStructure graph = new GraphStructure(true);
+        for(int i = 0; i < 8; i++) {
+            graph.addVertex(i);
+        }
+        graph.constants.put("s", 7);
+        graph.constants.put("t", 0);
+        int[][] edges = {{0, 1}, {0, 2}, {0, 3}, {1, 0}, {2, 0}, {3, 0}, {1, 4}, {1, 5}, {4, 1}, {5, 1}, {4, 7}, {5, 7}, {7, 4}, {7, 5}};
+        for(int[] edge : edges) {
+            Vertex v1 = graph.new Vertex(edge[0]);
+            Vertex v2 = graph.new Vertex(edge[1]);
+            GraphStructure.Edge dEdge = graph.new Edge(v1, v2);
+            ((GraphStructure.E)graph.relations.get("E")).getEdges().add(dEdge);
+        }
+        TreeAutomaton automaton = new TreeAutomaton(tree, new HashSet<>(), null);
     }
 
     @Test
