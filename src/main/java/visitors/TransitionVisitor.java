@@ -1,6 +1,5 @@
 package visitors;
 
-import java.util.ArrayList;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import antlr.*;
@@ -8,16 +7,28 @@ import lombok.Getter;
 import lombok.Setter;
 import antlr.FOkParser.*;
 
-
 /**
  * This class is a helper class for the tranverse function of tree automata.
  */
-@Getter @Setter
+@Getter
+@Setter
 public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
-    private int depth = -1;
     public ParserRuleContext current; // subtype of RuleNode
-    public ArrayList<ParserRuleContext> next;
-    private boolean shouldStop = false;
+    private boolean toPause = false;
+
+    public void pause_() {
+        toPause = true;
+    }
+
+    public void continue_() {
+        toPause = false;
+        this.visitChildren(current);
+    }
+
+    public ParserRuleContext next() {
+        this.pause_();
+        return this.current;
+    }
 
     @Override
     public Void visit(ParseTree tree) {
@@ -27,7 +38,8 @@ public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
     @Override
     public Void visitChildren(RuleNode node) {
         System.out.println("node: " + node);
-        if (shouldStop) {
+        if (toPause) {
+            this.current = (ParserRuleContext) node;
             return null;
         }
         return super.visitChildren(node); // continue the traversal
@@ -46,18 +58,17 @@ public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
     /**
      * @param ctx The context of the formula.
      *            formula
-     * 1          : NOT formula 
-     * 2          | formula op=(IFF | IMPLIES | AND | OR) formula
-     * 3          | qop=(FORALL | EXISTS) VARIABLE DOT LPAREN formula RPAREN
-     * 4          | RELATION (LPAREN term (COMMA term)* RPAREN)?
-     * 5          | term EQUALS term
-     * 6          | value
-     * 7          | LPAREN formula RPAREN
+     *            1 : NOT formula
+     *            2 | formula op=(IFF | IMPLIES | AND | OR) formula
+     *            3 | qop=(FORALL | EXISTS) VARIABLE DOT LPAREN formula RPAREN
+     *            4 | RELATION (LPAREN term (COMMA term)* RPAREN)?
+     *            5 | term EQUALS term
+     *            6 | value
+     *            7 | LPAREN formula RPAREN
      *            ;
      */
     @Override
     public Void visitFormula(FormulaContext ctx) {
-        System.out.println(ctx);
         if (ctx.getChild(0) == ctx.NOT()) { // case 1
         } else if (ctx.getChild(0) == ctx.LPAREN()) { // case 7
         } else if (ctx.qop != null) { // case 3
@@ -66,10 +77,10 @@ public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
                     break;
                 case FOkParser.EXISTS:
                     break;
-                default: break;
+                default:
+                    break;
             }
         } else if (ctx.getChild(0) == ctx.RELATION()) { // case 4
-            System.out.println("RELATION");
             for (int i = 0; i < ctx.getChildCount(); i++) { // discuss about the arity of the relation
                 System.out.println(ctx.getChild(i));
             }
@@ -83,8 +94,8 @@ public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
     /**
      * @param ctx The context of the term.
      *            term
-     * 1          : FUNC LPAREN term (COMMA term)* RPAREN
-     * 2          | VARIABLE
+     *            1 : FUNC LPAREN term (COMMA term)* RPAREN
+     *            2 | VARIABLE
      *            ;
      */
     @Override
@@ -97,7 +108,7 @@ public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
 
     /**
      * @param ctx The context of the value.
-     */ 
+     */
     @Override
     public Void visitValue(ValueContext ctx) {
         assert ctx.getRuleIndex() == FOkParser.TRUE || ctx.getRuleIndex() == FOkParser.FALSE;

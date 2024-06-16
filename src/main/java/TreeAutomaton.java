@@ -1,28 +1,42 @@
 import interfaces.*;
-import utils.*;
+import visitors.TransitionVisitor;
 import java.util.*;
+import javax.management.ConstructorParameters;
 import lombok.*;
-import lombok.experimental.PackagePrivate;
-
 import org.antlr.v4.runtime.tree.*;
 
-@AllArgsConstructor @NoArgsConstructor @Getter @Setter
+@AllArgsConstructor
 public class TreeAutomaton extends Automaton<Assignment, ParseTree> {
 
+    private final TransitionVisitor transitionVisitor = new TransitionVisitor();
 
-    @AllArgsConstructor @NoArgsConstructor @Getter @Setter
+    @Getter
+    private final Set<TreeState> states; // the set of states of the automaton
+
+    @Getter
+    private TreeState initialState; // the initial state of the automaton
+
+    @Getter
+    private TreeState currentState; // the current state of the automaton
+
+
+    public TreeAutomaton(ParseTree input, Set<TreeState> states, TreeState initialState) {
+        this.states = states;
+        this.initialState = initialState;
+        this.currentState = initialState;
+    }
+
+    @AllArgsConstructor
     public class TreeState implements Automaton.State<Assignment> {
         private boolean isAccepting = false; // whether the state is accepting
-        private Assignment assignment; // the assignment of the state
+        @ConstructorParameters({"assignment"})
+        public TreeState(Assignment assignment) {}
 
         @Override
         public boolean isAccepting() {
-            return isAccepting;
+            return this.isAccepting;
         }
     }
-
-    private Set<TreeState> states; // the set of states of the automaton
-    private TreeState initialState; // the initial state of the automaton
 
     @Override
     public boolean accepts(ParseTree input) {
@@ -30,30 +44,50 @@ public class TreeAutomaton extends Automaton<Assignment, ParseTree> {
     }
 
     public TreeState run(ParseTree input) {
-        // This method runs the automaton on the input.
-        return null;
+        TreeState currentState = this.initialState;
+        this.transitionVisitor.visit(input);
+        return currentState;
     }
 
-
-    @Override
     public void addState(State<Assignment> state) {
-        this.states.add((TreeState)state);
+        this.states.add((TreeState) state);
     }
 
-    @Override
     public void removeState(State<Assignment> state) {
         this.states.remove(state);
     }
 
-    @Override
     public boolean hasState(State<Assignment> state) {
         return this.states.contains(state);
     }
 
+    
+    /**
+     * Even though the transition function is defined as Q x Σ -> Q,
+     * we can get e \in Σ from class memebers.
+     */
     @Override
-    public Pair<State<Assignment>, Object> transition(State<Assignment> state, ParseTree input) {
+    public State<Assignment> transition(State<Assignment> state) {
         // This method transitions from one state to another.
         return null;
     }
 
+    /**
+     * determinize the automaton
+     */
+    @Override
+    public void determinize() {
+
+    }
+
+    /**
+     * intersect two automata
+     * 
+     * @param automaton
+     * @return the intersection of two automata
+     */
+    @Override
+    public Automaton<Assignment, ParseTree> intersect(Automaton<Assignment, ParseTree> automaton) {
+        return null;
+    }
 }

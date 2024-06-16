@@ -52,4 +52,7 @@ test: compile
 	java -cp $(OUT):lib/$(ANTLR4_JAR):lib/$(JUNIT_JAR):lib/$(HAMCREST_JAR) org.junit.runner.JUnitCore SimpleTest
 	@echo "Done."
 
-.PHONY: all clean antlr run compile test
+wc: 
+	@wc -l `find . -name '[^FO]*.java' -or -name '*.g4' -or -name 'Makefile'`
+
+.PHONY: all clean antlr run compile test wc
