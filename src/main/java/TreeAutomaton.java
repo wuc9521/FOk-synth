@@ -2,10 +2,12 @@ import interfaces.*;
 import utils.*;
 import java.util.*;
 import lombok.*;
+import lombok.experimental.PackagePrivate;
+
 import org.antlr.v4.runtime.tree.*;
 
-
-public class TreeAutomaton implements Automaton<Assignment, ParseTree> {
+@AllArgsConstructor @NoArgsConstructor @Getter @Setter
+public class TreeAutomaton extends Automaton<Assignment, ParseTree> {
 
 
     @AllArgsConstructor @NoArgsConstructor @Getter @Setter
@@ -22,33 +24,33 @@ public class TreeAutomaton implements Automaton<Assignment, ParseTree> {
     private Set<TreeState> states; // the set of states of the automaton
     private TreeState initialState; // the initial state of the automaton
 
+    @Override
     public boolean accepts(ParseTree input) {
-        // This method accepts or rejects a parse tree.
-        return false;
+        return this.run(input).isAccepting();
     }
 
-    public State<Assignment> getInitialState() {
-        // This method returns the initial state of the automaton.
+    public TreeState run(ParseTree input) {
+        // This method runs the automaton on the input.
         return null;
     }
 
-    public void setInitialState(State<Assignment> state) {
-        // This method sets the initial state of the automaton.
-    }
 
+    @Override
     public void addState(State<Assignment> state) {
-        // This method adds a state to the automaton.
+        this.states.add((TreeState)state);
     }
 
+    @Override
     public void removeState(State<Assignment> state) {
-        // This method removes a state from the automaton.
+        this.states.remove(state);
     }
 
+    @Override
     public boolean hasState(State<Assignment> state) {
-        // This method checks if the automaton has a state.
-        return false;
+        return this.states.contains(state);
     }
 
+    @Override
     public Pair<State<Assignment>, Object> transition(State<Assignment> state, ParseTree input) {
         // This method transitions from one state to another.
         return null;

@@ -1,4 +1,4 @@
-// Generated from src/main/ag/FOkParser.g4 by ANTLR 4.9.1
+// Generated from src/main/g4/FOkParser.g4 by ANTLR 4.9.1
 package antlr;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 

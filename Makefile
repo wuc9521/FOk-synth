@@ -7,9 +7,9 @@ LOMBOK_URL=https://projectlombok.org/downloads/$(LOMBOK_JAR)
 JUNIT_URL=https://repo1.maven.org/maven2/junit/junit/4.13.2/$(JUNIT_JAR)
 HAMCREST_URL=https://repo1.maven.org/maven2/org/hamcrest/hamcrest-all/1.3/$(HAMCREST_JAR)
 ANTLR = java -jar lib/$(ANTLR4_JAR) -Dlanguage=Java -visitor -no-listener
-AG=src/main/ag
-PFILE = $(AG)/FOkParser.g4
-LFILE = $(AG)/FOkLexer.g4
+G4 = src/main/g4
+PFILE = $(G4)/FOkParser.g4
+LFILE = $(G4)/FOkLexer.g4
 MAIN=src/main/java
 TEST=src/test/java
 OUT = out/class
@@ -30,9 +30,9 @@ clean:
 antlr: lib/$(ANTLR4_JAR) $(PFILE) $(LFILE)
 	$(ANTLR) $(LFILE) -package antlr
 	$(ANTLR) $(PFILE) -package antlr
-	rm -rf $(AG)/*.tokens
-	rm -rf $(AG)/*.interp
-	mv $(AG)/*.java $(MAIN)/antlr
+	rm -rf $(G4)/*.tokens
+	rm -rf $(G4)/*.interp
+	mv $(G4)/*.java $(MAIN)/antlr
 
 compile: antlr
 	mkdir -p $(OUT)
