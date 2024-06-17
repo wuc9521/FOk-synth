@@ -5,13 +5,12 @@ import antlr.FOkParser.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.*;
-import org.junit.experimental.theories.internal.Assignments;
 
-import interfaces.*;
+import FO.Structure;
+import FO.Assignment;
 import java.util.*;
 import utils.*;
 import org.antlr.v4.runtime.Token;
-import structures.*;
 
 
 /**

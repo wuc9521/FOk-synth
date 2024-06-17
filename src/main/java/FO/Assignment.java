@@ -1,5 +1,6 @@
-package structures;
-import interfaces.Structure;
+package FO;
+
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

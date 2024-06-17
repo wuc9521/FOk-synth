@@ -1,9 +1,13 @@
-import interfaces.*;
+
 import java.util.*;
 import lombok.*;
-import structures.Assignment;
 import utils.TupleGenerator;
 import org.antlr.runtime.Token;
+
+import FA.Automaton;
+import FO.Assignment;
+import FO.Structure;
+
 import java.util.stream.Collectors;
 
 import antlr.FOkParser;
@@ -49,6 +53,10 @@ public class TreeAutomaton extends Automaton<Assignment, Token> {
         @Override
         public boolean isAccepting() {
             return this.isAccepting;
+        }
+
+        public Structure<?>.Element getValueOfVar(String var) {
+            return this.allVarAsnmnt.getKvMap().get(var);
         }
     }
 

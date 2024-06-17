@@ -1,4 +1,4 @@
-package interfaces;
+package FA;
 import lombok.*;
 import java.util.*;
 

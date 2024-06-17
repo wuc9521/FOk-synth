@@ -5,16 +5,20 @@ import antlr.FOkParser.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.*;
-import interfaces.*;
-import structures.Assignment;
 
+import FO.Structure;
+import FO.Assignment;
 import java.util.*;
 import utils.*;
 import java.util.stream.Collectors;
+
+
 import org.antlr.v4.runtime.Token;
 
 public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     private Structure<T> structure;
+
+    private ParseTree tree;
 
     // the hashmap to store the bound variables in the formula.
     private HashMap<TerminalNode, Pair<Token, TerminalNode>> bdVarTable = new HashMap<>();
@@ -22,8 +26,17 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     private List<ParserRuleContext> contexts = new ArrayList<>();
     private Assignment assignment;
 
+    public FOkVisitor() {
+        super();
+    }
+
+    public FOkVisitor(Structure<T> structure) {
+        this.structure = structure;
+    }
+
     @Override
     public Void visit(ParseTree tree) {
+        this.tree = tree;
         return tree.accept(this);
     }
 
@@ -82,7 +95,8 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             RuleContext parent = ctx.getParent();
             // since variable can be reused, we consider the variable in the nearest
             // quantifier.
-            while (parent != null && (!(parent instanceof FormulaContext) || ((FormulaContext) parent).qop == null)) {
+            while (parent != null && (!(parent instanceof FormulaContext) || ((FormulaContext) parent).qop == null || !((FormulaContext) parent).VARIABLE().getText().equals(ctx.VARIABLE().getText()))) {
+                // 向上一直到找到第一个同名的 bounded variable 为止.
                 parent = parent.getParent();
             }
             FormulaContext fCtx = (FormulaContext) parent;
@@ -143,8 +157,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
                 case FOkParser.FORALL:
                     if(this.assignment != null){
                         System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()));
+                        // print all children
                         return calFormulaVal(fCtx.formula(0));
-                        // TODO: 这里的写法应该是不支持变量复用的. 
+                        // TODO: 这里的写法目前应该是不支持变量复用的. 
                     } else{ // if there is no assignment, just consider all the cases.
                         System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
                         boolean res = true;
@@ -197,6 +212,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
      *            3 | CONST
      *            ;
      */
+    @SuppressWarnings("unchecked")
     private T calTermVal(ParserRuleContext ctx) {
         if (ctx.getChild(0) == ((TermContext) ctx).FUNC()) { // case 1: checked
             // 我们假设在这个简化的FOk模型中, 不会出现函数.
@@ -210,7 +226,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             }
             TerminalNode var = tCtx.VARIABLE();
             assert this.assignment.getKvMap().containsKey(var.getText());
-            this.assignment.getKvMap().get(var.getText()).getValue();
+            return ((T) this.assignment.getKvMap().get(var.getText()).getValue());
         } else if (ctx.getChild(0) == ((TermContext) ctx).CONST()) { // case 3: checked
             // get the value of the const
             TermContext tCtx = (TermContext) ctx;
@@ -236,5 +252,10 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     public boolean getFormulaVal(Assignment assignment) {
         this.assignment = assignment;
         return this.getFormulaVal();
+    }
+
+    public HashMap<TerminalNode, Pair<Token, TerminalNode>> getBdVarTable() {
+        tree.accept(this);
+        return bdVarTable;
     }
 }

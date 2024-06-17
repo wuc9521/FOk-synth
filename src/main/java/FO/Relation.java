@@ -1,4 +1,4 @@
-package interfaces;
+package FO;
 
 
 public interface Relation {

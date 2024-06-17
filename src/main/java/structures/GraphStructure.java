@@ -1,8 +1,9 @@
 package structures;
 
-import interfaces.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
+import FO.Structure;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,14 @@ public class GraphStructure extends Structure<Integer> {
         public Vertex(Integer value) {
             super(value);
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            Vertex vertex = (Vertex) obj;
+            System.out.println(111111);
+            System.out.println(this.value + " " + vertex.value);
+            return this.value.equals(vertex.value);
+        }
     }
 
 
@@ -45,7 +54,7 @@ public class GraphStructure extends Structure<Integer> {
 
 
         public boolean holds(Edge edge) {
-            return this.edges.contains(edge);
+            return this.holds(Arrays.asList(edge.v1, edge.v2));
         }
 
         public boolean holds(Vertex... vertexs) {
@@ -58,7 +67,7 @@ public class GraphStructure extends Structure<Integer> {
         @Override
         public boolean holds(List<Element> args) {
             for (Edge edge : this.edges) {
-                if (edge.v1 == args.get(0) && edge.v2 == args.get(1)) {
+                if (edge.v1.equals(args.get(0)) && edge.v2.equals(args.get(1))) {
                     return true;
                 }
             }
@@ -70,9 +79,15 @@ public class GraphStructure extends Structure<Integer> {
         // v1 -> v2
         Vertex v1;
         Vertex v2;
+        
         public Edge(Vertex v1, Vertex v2) {
             this.v1 = v1;
             this.v2 = v2;
+        }
+        @Override
+        public boolean equals(Object obj) {
+            Edge edge = (Edge) obj;
+            return this.v1.equals(edge.v1) && this.v2.equals(edge.v2);
         }
     }
 

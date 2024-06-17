@@ -1,4 +1,4 @@
-package interfaces;
+package FO;
 
 import java.util.*;
 import lombok.AllArgsConstructor;
@@ -17,11 +17,14 @@ public abstract class Structure<DType> {
     @AllArgsConstructor
     public class Element { // define the type of elements in the structure
         public DType value;
+        
+        public boolean equals(Element element){
+            return this.value.equals(element.value);
+        }
     }
 
     public abstract class Relation {
         public int arity; // the arity of the relation
-        public String name; // the name of the relation
         public abstract boolean holds(List<Element> args); // check if the relation holds
     }
 } 

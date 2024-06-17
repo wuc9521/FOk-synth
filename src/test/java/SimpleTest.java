@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Scanner;
+
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import antlr.*;
@@ -31,18 +32,19 @@ public class SimpleTest {
 
     @Test
     public void automataTest() {
-        String input = "forall x. (exists y . (P(x) <-> Q(y))) & $T";
+        String input = "forall x . ( E(#1, x) -> (exists y . ( E(x, y) & E(y, #2))))";
         CharStream charStream = CharStreams.fromString(input);
         FOkLexer lexer = new FOkLexer(charStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
+        
         GraphStructure graphSturcture = new GraphStructure(true);
         for (int i = 0; i < 8; i++) {
             graphSturcture.addVertex(i);
         }
-        graphSturcture.constants.put("s", 7);
-        graphSturcture.constants.put("t", 0);
+        graphSturcture.constants.put("#1", 7);
+        graphSturcture.constants.put("#2", 0);
         int[][] edges = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
                 { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
         for (int[] edge : edges) {
@@ -52,21 +54,30 @@ public class SimpleTest {
             ((GraphStructure.E) graphSturcture.relations.get("E")).getEdges().add(dEdge);
         }
         TreeAutomaton automaton = new TreeAutomaton(
-                new ArrayList<String>() {
-                    {
-                        add("x");
-                        add("y");
-                    }
-                }, // the list of variables
-                graphSturcture);
+            new ArrayList<String>() {
+                {
+                    add("x");
+                    add("y");
+                }
+            }, // the list of variables
+            graphSturcture
+        );
+        FOkVisitor visitor = new FOkVisitor(graphSturcture);
+        visitor.visit(tree);
+        int idx = 0;
+        int tCnt = 0;
+        int fCnt = 0;
         for (TreeAutomaton.TreeState state : automaton.getStates()) {
-            // System.out.println(
-            // state.getAllVarAsnmnt().getKvMap().get("x").getValue()
-            // + " "
-            // + state.getAllVarAsnmnt().getKvMap().get("y").getValue()
-            // );
+            System.out.println("state " + idx++);
+            if (visitor.getFormulaVal(state.getAllVarAsnmnt())) {
+                tCnt++;
+            } else {
+                fCnt++;
+            }
         }
-        // System.out.println(automaton.getStates().size());
+        System.out.println(idx + " states in total");
+        System.out.println(tCnt + " states are true");
+        System.out.println(fCnt + " states are false");
     }
 
     @Test
@@ -81,9 +92,7 @@ public class SimpleTest {
         // Print all the variables in the formula
         FOkVisitor visitor = new FOkVisitor();
         visitor.visit(tree);
-        System.out.println("====================");
-        System.out.println(visitor.getFormulaVal());
-        System.out.println("====================");
+        assertFalse(visitor.getFormulaVal());
     }
 
     @Test
