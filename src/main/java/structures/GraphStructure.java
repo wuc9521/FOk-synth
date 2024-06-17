@@ -1,6 +1,5 @@
 package structures;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 import FO.Structure;

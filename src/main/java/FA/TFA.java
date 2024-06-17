@@ -1,10 +1,10 @@
+package FA;
 
 import java.util.*;
 import lombok.*;
 import utils.TupleGenerator;
 import org.antlr.runtime.Token;
 
-import FA.Automaton;
 import FO.Assignment;
 import FO.Structure;
 
@@ -13,18 +13,18 @@ import java.util.stream.Collectors;
 import antlr.FOkParser;
 
 @AllArgsConstructor
-public class TreeAutomaton extends Automaton<Assignment, Token> {
+public class TFA extends NFA<Assignment, Token> {
 
     @Getter
-    private final Set<TreeState> states; // the set of states of the automaton
+    private final Set<TState> states; // the set of states of the automaton
 
     @Getter
-    private TreeState initialState; // the initial state of the automaton
+    private TState initialState; // the initial state of the automaton
 
     @Getter
-    private TreeState currentState; // the current state of the automaton
+    private TState currentState; // the current state of the automaton
 
-    public TreeAutomaton(List<String> vars, Structure<?> structure) {
+    public TFA(List<String> vars, Structure<?> structure) {
         this.states = new HashSet<>();
 
         // initialize all the states by invoking the generateTuple method
@@ -34,7 +34,7 @@ public class TreeAutomaton extends Automaton<Assignment, Token> {
                 kvMap.put(vars.get(i), (Structure<?>.Element)tuple.get(i));
             }
             this.states.add(
-                new TreeState(
+                new TState(
                     new Assignment(kvMap)
                 )
             );
@@ -42,11 +42,11 @@ public class TreeAutomaton extends Automaton<Assignment, Token> {
     }
 
     @AllArgsConstructor
-    public class TreeState implements Automaton.State<Assignment> {
+    public class TState implements NFA.State<Assignment> {
         private boolean isAccepting = false; // whether the state is accepting
         @Getter
         private Assignment allVarAsnmnt; // the assignment of all the variables
-        public TreeState(Assignment assignment) {
+        public TState(Assignment assignment) {
             this.allVarAsnmnt = assignment;
         }
 
@@ -71,8 +71,8 @@ public class TreeAutomaton extends Automaton<Assignment, Token> {
     //     return currentState;
     // }
 
-    public void addState(TreeState state) {
-        this.states.add((TreeState) state);
+    public void addState(TState state) {
+        this.states.add((TState) state);
     }
 
     public void removeState(State<Assignment> state) {
@@ -126,7 +126,7 @@ public class TreeAutomaton extends Automaton<Assignment, Token> {
      * @return the intersection of two automata
      */
     @Override
-    public Automaton<Assignment, Token> intersect(Automaton<Assignment, Token> automaton) {
+    public NFA<Assignment, Token> intersect(NFA<Assignment, Token> automaton) {
         return null;
     }
 }

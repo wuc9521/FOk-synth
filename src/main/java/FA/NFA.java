@@ -7,7 +7,7 @@ import java.util.*;
  * An automata is formally defined as a 5-tuple (Q, Σ, δ, q0, F)
  */
 @Getter @Setter
-public abstract class Automaton<SType, IType> {
+public abstract class NFA<SType, IType> {
     public interface State<SType> {
         public boolean isAccepting(); // check if the state is accepting
     }
@@ -17,5 +17,5 @@ public abstract class Automaton<SType, IType> {
 
     public abstract void determinize(); // determinize the automaton
 
-    public abstract Automaton<SType, IType> intersect(Automaton<SType, IType> automaton); // intersect two automata
+    public abstract NFA<SType, IType> intersect(NFA<SType, IType> automaton); // intersect two automata
 }

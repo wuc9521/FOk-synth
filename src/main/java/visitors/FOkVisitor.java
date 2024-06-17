@@ -23,8 +23,10 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     // the hashmap to store the bound variables in the formula.
     private HashMap<TerminalNode, Pair<Token, TerminalNode>> bdVarTable = new HashMap<>();
     private Set<TerminalNode> allVarSet = new HashSet<>(); // collect all the variables in the formula
+    // maybe useful for the reuse of the variables.
     private List<ParserRuleContext> contexts = new ArrayList<>();
     private Assignment assignment;
+    private boolean shouldStop = false;
 
     public FOkVisitor() {
         super();
@@ -32,6 +34,20 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
 
     public FOkVisitor(Structure<T> structure) {
         this.structure = structure;
+    }
+
+    /**
+     * This method is used to pause the traversal of the tree.
+     */
+    private void pause_() {
+        this.shouldStop = true;
+    }
+
+    /**
+     * This method is used to resume the traversal of the tree.
+     */
+    public void resume_() {
+        this.shouldStop = false;
     }
 
     @Override
@@ -44,6 +60,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     public Void visitChildren(RuleNode node) {
         if (node instanceof ParserRuleContext) {
             this.contexts.add((ParserRuleContext) node);
+        }
+        if (node instanceof FormulaContext) {
+            this.pause_();
         }
         return super.visitChildren(node); // continue the traversal
     }
@@ -72,8 +91,11 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
      */
     @Override
     public Void visitFormula(FormulaContext ctx) {
+        if (this.shouldStop) {
+            return null;
+        }
         FormulaContext fCtx = (FormulaContext) ctx;
-        if (fCtx.qop != null) {
+        if (fCtx.qop != null) { // case 3
             this.allVarSet.add(fCtx.VARIABLE());
         }
         return visitChildren(ctx);
@@ -254,6 +276,20 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
         return this.getFormulaVal();
     }
 
+    /**
+     * This method is used to get the value of the formula (T or F)
+     * @param ctx The context of the formula.
+     * @param assignment The assignment of the variables.
+     * @return The value of the formula (T or F)
+     */
+    public boolean getFormulaVal(FormulaContext ctx, Assignment assignment) {
+        this.assignment = assignment;
+        return this.calFormulaVal(ctx);
+    }
+
+    /**
+     * @return The hashmap to store the bound variables in the formula.
+     */
     public HashMap<TerminalNode, Pair<Token, TerminalNode>> getBdVarTable() {
         tree.accept(this);
         return bdVarTable;

@@ -68,16 +68,16 @@ public class SimpleTest {
         int tCnt = 0;
         int fCnt = 0;
         for (TreeAutomaton.TreeState state : automaton.getStates()) {
-            System.out.println("state " + idx++);
+            idx++;
             if (visitor.getFormulaVal(state.getAllVarAsnmnt())) {
                 tCnt++;
             } else {
                 fCnt++;
             }
         }
-        System.out.println(idx + " states in total");
-        System.out.println(tCnt + " states are true");
-        System.out.println(fCnt + " states are false");
+        assertEquals(idx, 64);
+        assertEquals(tCnt, 50);
+        assertEquals(fCnt + tCnt, idx);
     }
 
     @Test
