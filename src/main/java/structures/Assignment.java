@@ -1,3 +1,4 @@
+package structures;
 import interfaces.Structure;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

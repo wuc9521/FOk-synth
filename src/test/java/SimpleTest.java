@@ -1,10 +1,13 @@
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+
+import java.util.ArrayList;
 import java.util.Scanner;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import antlr.*;
+import java.util.*;
 import structures.GraphStructure;
 import structures.GraphStructure.Vertex;
 import visitors.FOkVisitor;
@@ -19,7 +22,7 @@ public class SimpleTest {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
-        System.out.println(tree.toStringTree(parser));
+        // System.out.println(tree.toStringTree(parser));
 
         // print all the variables in the formula
         FOkParserBaseVisitor<Void> visitor = new TransitionVisitor();
@@ -34,34 +37,53 @@ public class SimpleTest {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
-        GraphStructure graph = new GraphStructure(true);
-        for(int i = 0; i < 8; i++) {
-            graph.addVertex(i);
+        GraphStructure graphSturcture = new GraphStructure(true);
+        for (int i = 0; i < 8; i++) {
+            graphSturcture.addVertex(i);
         }
-        graph.constants.put("s", 7);
-        graph.constants.put("t", 0);
-        int[][] edges = {{0, 1}, {0, 2}, {0, 3}, {1, 0}, {2, 0}, {3, 0}, {1, 4}, {1, 5}, {4, 1}, {5, 1}, {4, 7}, {5, 7}, {7, 4}, {7, 5}};
-        for(int[] edge : edges) {
-            Vertex v1 = graph.new Vertex(edge[0]);
-            Vertex v2 = graph.new Vertex(edge[1]);
-            GraphStructure.Edge dEdge = graph.new Edge(v1, v2);
-            ((GraphStructure.E)graph.relations.get("E")).getEdges().add(dEdge);
+        graphSturcture.constants.put("s", 7);
+        graphSturcture.constants.put("t", 0);
+        int[][] edges = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
+                { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
+        for (int[] edge : edges) {
+            Vertex v1 = graphSturcture.new Vertex(edge[0]);
+            Vertex v2 = graphSturcture.new Vertex(edge[1]);
+            GraphStructure.Edge dEdge = graphSturcture.new Edge(v1, v2);
+            ((GraphStructure.E) graphSturcture.relations.get("E")).getEdges().add(dEdge);
         }
-        TreeAutomaton automaton = new TreeAutomaton(tree, new HashSet<>(), null);
+        TreeAutomaton automaton = new TreeAutomaton(
+                new ArrayList<String>() {
+                    {
+                        add("x");
+                        add("y");
+                    }
+                }, // the list of variables
+                graphSturcture);
+        for (TreeAutomaton.TreeState state : automaton.getStates()) {
+            // System.out.println(
+            // state.getAllVarAsnmnt().getKvMap().get("x").getValue()
+            // + " "
+            // + state.getAllVarAsnmnt().getKvMap().get("y").getValue()
+            // );
+        }
+        // System.out.println(automaton.getStates().size());
     }
 
     @Test
     public void calValTest() {
-        String input = "forall x. (exists y . (P(x) <-> Q(y))) & $T";
+        String input = "(($F -> $T)->$T) <-> $T & $F";
         CharStream charStream = CharStreams.fromString(input);
         FOkLexer lexer = new FOkLexer(charStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
 
-        // print all the variables in the formula
-        FOkParserBaseVisitor<Void> visitor = new FOkVisitor();
+        // Print all the variables in the formula
+        FOkVisitor visitor = new FOkVisitor();
         visitor.visit(tree);
+        System.out.println("====================");
+        System.out.println(visitor.getFormulaVal());
+        System.out.println("====================");
     }
 
     @Test

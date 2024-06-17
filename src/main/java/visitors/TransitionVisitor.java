@@ -37,7 +37,6 @@ public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
 
     @Override
     public Void visitChildren(RuleNode node) {
-        System.out.println("node: " + node);
         if (toPause) {
             this.current = (ParserRuleContext) node;
             return null;
@@ -82,7 +81,7 @@ public class TransitionVisitor extends FOkParserBaseVisitor<Void> {
             }
         } else if (ctx.getChild(0) == ctx.RELATION()) { // case 4
             for (int i = 0; i < ctx.getChildCount(); i++) { // discuss about the arity of the relation
-                System.out.println(ctx.getChild(i));
+                // System.out.println(ctx.getChild(i));
             }
         } else if (ctx.getChild(0) == ctx.term()) { // case 5
         } else if (ctx.getChild(0) == ctx.value()) { // case 6
