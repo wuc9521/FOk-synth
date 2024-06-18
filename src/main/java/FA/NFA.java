@@ -12,10 +12,28 @@ public abstract class NFA<SType, IType> {
         public boolean isAccepting(); // check if the state is accepting
     }
 
-    // 这里第二个范型要有一个类似于 parsetree traverse pointer 的东西, 来记录当前到输入的哪一步了.
+    /**
+     * @param input the input to be checked
+     * @return whether the automaton accepts the input
+     */
+    public abstract boolean accept(IType input); // check if the automaton accepts the input
+
+    /**
+     * @param state the state to transition from
+     * @param input the input to be checked
+     * @return the set of states that the automaton can transit to
+     */
     public abstract Set<State<SType>> transition(State<SType> state, IType input); // transition from one state to another
 
+    /**
+     * determinize the NFA to a DFA
+     */
     public abstract void determinize(); // determinize the automaton
 
+    /**
+     * intersect two automata
+     * @param automaton the automaton to be intersected with
+     * @return the intersected automaton
+     */
     public abstract NFA<SType, IType> intersect(NFA<SType, IType> automaton); // intersect two automata
 }

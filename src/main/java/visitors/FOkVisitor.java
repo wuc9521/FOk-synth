@@ -39,15 +39,18 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     /**
      * This method is used to pause the traversal of the tree.
      */
-    private void pause_() {
+    private void pauseVisit() {
         this.shouldStop = true;
     }
 
     /**
      * This method is used to resume the traversal of the tree.
      */
-    public void resume_() {
+    public void resumeVisit() {
         this.shouldStop = false;
+        this.visitChildren(
+            this.contexts.remove(this.contexts.size() - 1) // don't forget to remove the last element.
+        );
     }
 
     @Override
@@ -62,7 +65,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             this.contexts.add((ParserRuleContext) node);
         }
         if (node instanceof FormulaContext) {
-            this.pause_();
+            this.pauseVisit();
         }
         return super.visitChildren(node); // continue the traversal
     }
@@ -118,7 +121,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             // since variable can be reused, we consider the variable in the nearest
             // quantifier.
             while (parent != null && (!(parent instanceof FormulaContext) || ((FormulaContext) parent).qop == null || !((FormulaContext) parent).VARIABLE().getText().equals(ctx.VARIABLE().getText()))) {
-                // 向上一直到找到第一个同名的 bounded variable 为止.
+                // search up to the first bounded variable with the same name.
                 parent = parent.getParent();
             }
             FormulaContext fCtx = (FormulaContext) parent;
@@ -168,7 +171,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
                 case FOkLexer.IMPLIES:
                     return !left || right;
                 case FOkLexer.AND:
-                    return left && right; // 这里如果不使用变量的话, Java 编译器会自动进行短路求值.
+                    // if we use calFormulaVal instead of the variable, 
+                    // the Java compiler will automatically perform short-circuit evaluation.
+                    return left && right;   
                 case FOkLexer.OR:
                     return left || right;
                 default:
@@ -180,8 +185,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
                     if(this.assignment != null){
                         System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()));
                         // print all children
-                        return calFormulaVal(fCtx.formula(0));
-                        // TODO: 这里的写法目前应该是不支持变量复用的. 
+                        return calFormulaVal(fCtx.formula(0)); // TODO: currently we don't support the reuse of the variables.
                     } else{ // if there is no assignment, just consider all the cases.
                         System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
                         boolean res = true;
@@ -237,9 +241,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     @SuppressWarnings("unchecked")
     private T calTermVal(ParserRuleContext ctx) {
         if (ctx.getChild(0) == ((TermContext) ctx).FUNC()) { // case 1: checked
-            // 我们假设在这个简化的FOk模型中, 不会出现函数.
+            // TODO: currently we don't support the function.
             return null;
-        } else if (ctx.getChild(0) == ((TermContext) ctx).VARIABLE()) { // case 2
+        } else if (ctx.getChild(0) == ((TermContext) ctx).VARIABLE()) { // case 2: checked
             // get the variable from the hashmap
             TermContext tCtx = (TermContext) ctx;
             Pair<Token, TerminalNode> pair = bdVarTable.get(((TermContext) ctx).VARIABLE());
@@ -262,6 +266,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
      * @return The value of the formula (T or F)
      */
     public boolean getFormulaVal() {
+        if (this.contexts.size() == 0) {
+            this.tree.accept(this);
+        }
         return this.calFormulaVal(this.contexts.get(0));
     }
 

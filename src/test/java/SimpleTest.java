@@ -8,11 +8,13 @@ import java.util.Scanner;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import antlr.*;
+import FA.*;
 import java.util.*;
 import structures.GraphStructure;
 import structures.GraphStructure.Vertex;
 import visitors.FOkVisitor;
 import visitors.TransitionVisitor;
+
 
 public class SimpleTest {
     @Test
@@ -53,7 +55,7 @@ public class SimpleTest {
             GraphStructure.Edge dEdge = graphSturcture.new Edge(v1, v2);
             ((GraphStructure.E) graphSturcture.relations.get("E")).getEdges().add(dEdge);
         }
-        TreeAutomaton automaton = new TreeAutomaton(
+        FOkTFA automaton = new FOkTFA(
             new ArrayList<String>() {
                 {
                     add("x");
@@ -67,7 +69,7 @@ public class SimpleTest {
         int idx = 0;
         int tCnt = 0;
         int fCnt = 0;
-        for (TreeAutomaton.TreeState state : automaton.getStates()) {
+        for (FOkTFA.TState state : automaton.getStates()) {
             idx++;
             if (visitor.getFormulaVal(state.getAllVarAsnmnt())) {
                 tCnt++;

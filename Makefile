@@ -54,6 +54,6 @@ test: compile
 	@echo "Done."
 
 wc: 
-	@wc -l `find . -name '[^FOk]*.java' -or -name '*.g4' -or -name 'Makefile' -or -name 'FOkVisitor.java'`
+	@wc -l `find . -name '*.java' -or -name '*.g4' -or -name 'Makefile'`
 
 .PHONY: all clean antlr run compile test wc
