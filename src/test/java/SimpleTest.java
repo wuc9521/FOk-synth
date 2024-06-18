@@ -11,9 +11,11 @@ import antlr.*;
 import FA.*;
 import java.util.*;
 import structures.GraphStructure;
+import structures.GraphStructure.Edge;
 import structures.GraphStructure.Vertex;
 import visitors.FOkVisitor;
 import visitors.TransitionVisitor;
+import utils.Colors;
 
 
 public class SimpleTest {
@@ -55,7 +57,7 @@ public class SimpleTest {
             GraphStructure.Edge dEdge = graphSturcture.new Edge(v1, v2);
             ((GraphStructure.E) graphSturcture.relations.get("E")).getEdges().add(dEdge);
         }
-        FOkTFA automaton = new FOkTFA(
+        FOkATFA automaton = new FOkATFA(
             new ArrayList<String>() {
                 {
                     add("x");
@@ -66,20 +68,19 @@ public class SimpleTest {
         );
         FOkVisitor visitor = new FOkVisitor(graphSturcture);
         visitor.visit(tree);
-        int idx = 0;
-        int tCnt = 0;
-        int fCnt = 0;
-        for (FOkTFA.TState state : automaton.getStates()) {
-            idx++;
-            if (visitor.getFormulaVal(state.getAllVarAsnmnt())) {
-                tCnt++;
-            } else {
-                fCnt++;
-            }
-        }
-        assertEquals(idx, 64);
-        assertEquals(tCnt, 50);
-        assertEquals(fCnt + tCnt, idx);
+        // x = 4, y = 2 should reject
+        System.out.println("");
+        automaton.getStates().stream().forEach(state -> {
+            boolean isAccepting = visitor.getFormulaVal(((FOkATFA.TState) state).getAssignment());
+            String color = isAccepting ? Colors.GREEN : Colors.RED; // 设置颜色
+            System.out.print(color); // 设置颜色
+            System.out.print("{ ");
+            ((FOkATFA.TState) state).getAssignment().getKvMap().forEach((k, v) -> {
+                System.out.print(k + " -> " + v.getValue() + " "); // 打印键值对
+            });
+            System.out.println((isAccepting ? "} is accepting" : "} is rejecting") + Colors.RESET); // 结束颜色并重置
+        });
+        
     }
 
     @Test

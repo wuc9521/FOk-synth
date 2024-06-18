@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 public class GraphStructure extends Structure<Integer> {
 
     // hidden member variables
@@ -18,7 +17,8 @@ public class GraphStructure extends Structure<Integer> {
     // domain: Set<Element>
     // pos: boolean
 
-    // explicitly invoke the constructor of the superclass if superclass does not have a default constructor
+    // explicitly invoke the constructor of the superclass if superclass does not
+    // have a default constructor
     public GraphStructure(boolean pos) {
         super(pos);
         this.relations.put("E", new E());
@@ -32,39 +32,34 @@ public class GraphStructure extends Structure<Integer> {
         @Override
         public boolean equals(Object obj) {
             Vertex vertex = (Vertex) obj;
-            System.out.println(111111);
-            System.out.println(this.value + " " + vertex.value);
             return this.value.equals(vertex.value);
         }
     }
-
 
     /**
      * represents an directed edge in the graph.
      */
     @AllArgsConstructor
-    @NoArgsConstructor 
+    @NoArgsConstructor
+    @Getter
+    @Setter
     public class E extends Relation {
-        public final int arity = 2;
-        
-        @Getter
-        @Setter
+        private final int arity = 2;
         private List<Edge> edges = new ArrayList<>();
-
 
         public boolean holds(Edge edge) {
             return this.holds(Arrays.asList(edge.v1, edge.v2));
         }
 
         public boolean holds(Vertex... vertexs) {
-            if (vertexs.length != 2) {
-                return false;
-            }
             return this.holds(Arrays.asList(vertexs));
         }
 
         @Override
         public boolean holds(List<Element> args) {
+            if (args.size() != this.arity) {
+                return false;
+            }
             for (Edge edge : this.edges) {
                 if (edge.v1.equals(args.get(0)) && edge.v2.equals(args.get(1))) {
                     return true;
@@ -74,15 +69,17 @@ public class GraphStructure extends Structure<Integer> {
         }
     }
 
+    @Getter
     public class Edge {
         // v1 -> v2
         Vertex v1;
         Vertex v2;
-        
+
         public Edge(Vertex v1, Vertex v2) {
             this.v1 = v1;
             this.v2 = v2;
         }
+
         @Override
         public boolean equals(Object obj) {
             Edge edge = (Edge) obj;
@@ -92,7 +89,7 @@ public class GraphStructure extends Structure<Integer> {
 
     public Edge addEdge(Vertex v1, Vertex v2) {
         Edge dEdge = new Edge(v1, v2);
-        ((E)this.relations.get("E")).getEdges().add(dEdge);
+        ((E) this.relations.get("E")).getEdges().add(dEdge);
         return dEdge;
     }
 

@@ -183,11 +183,10 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             switch (fCtx.qop.getType()) {
                 case FOkParser.FORALL:
                     if(this.assignment != null){
-                        System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()));
-                        // print all children
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()).getValue());
                         return calFormulaVal(fCtx.formula(0)); // TODO: currently we don't support the reuse of the variables.
                     } else{ // if there is no assignment, just consider all the cases.
-                        System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
                         boolean res = true;
                         Assignment newAssignment = new Assignment(new HashMap<>(this.assignment.getKvMap()));
                         for (Structure<T>.Element ele : this.structure.domain) {
@@ -198,10 +197,10 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
                     }
                 case FOkParser.EXISTS:
                     if (this.assignment != null) {
-                        System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()));
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()).getValue());
                         return calFormulaVal(fCtx.formula(0));
                     } else { // if there is no assignment, just consider all the cases.
-                        System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
                         boolean res = false;
                         Assignment newAssignment = new Assignment(new HashMap<>(this.assignment.getKvMap()));
                         for (Structure<T>.Element ele : this.structure.domain) {
@@ -247,8 +246,8 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             // get the variable from the hashmap
             TermContext tCtx = (TermContext) ctx;
             Pair<Token, TerminalNode> pair = bdVarTable.get(((TermContext) ctx).VARIABLE());
-            if (pair == null) {
-                return null;
+            if (pair == null) { // 说明该变量没有被赋值过, 不应该返回 null, 应该保持原样.
+                // DO NOTHING! Don't return null;
             }
             TerminalNode var = tCtx.VARIABLE();
             assert this.assignment.getKvMap().containsKey(var.getText());
