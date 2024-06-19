@@ -18,7 +18,7 @@ public abstract class NFA<SType, IType> {
      * @param input the input to be checked
      * @return whether the automaton accepts the input
      */
-    public abstract boolean accept(IType input) throws Exception; // check if the automaton accepts the input
+    public abstract boolean accepts(IType input) throws Exception; // check if the automaton accepts the input
 
     /**
      * determinize the NFA to a DFA

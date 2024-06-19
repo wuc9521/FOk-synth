@@ -43,8 +43,13 @@ public abstract class Structure<DType> {
         }
     }
 
+    @Getter
     public abstract class Relation {
         public int arity; // the arity of the relation
+        private List<List<Element>> tuples = new ArrayList<>(); // the tuples in the relation
         public abstract boolean holds(List<Element> args); // check if the relation holds
+        public void addTuple(List<Element> tuple) {
+            this.tuples.add(tuple);
+        }
     }
 } 

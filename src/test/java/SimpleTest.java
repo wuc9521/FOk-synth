@@ -56,7 +56,7 @@ public class SimpleTest {
             Vertex v1 = graphSturcture.new Vertex(edge[0]);
             Vertex v2 = graphSturcture.new Vertex(edge[1]);
             GraphStructure.Edge dEdge = graphSturcture.new Edge(v1, v2);
-            ((GraphStructure.E) graphSturcture.relations.get("E")).getEdges().add(dEdge);
+            ((GraphStructure.E) graphSturcture.relations.get("E")).addEdge(dEdge);
         }
         FOkATFA automaton = new FOkATFA(
             new ArrayList<String>() {
@@ -113,7 +113,8 @@ public class SimpleTest {
 
     @Test
     public void automataAcceptsTest() {
-        String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
+        // String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
+        String input = "~ E ( #2 , #3 )";
         // String input = "~(exists x . (E(x, #2)))";
         CharStream charStream = CharStreams.fromString(input);
         FOkLexer lexer = new FOkLexer(charStream);
@@ -131,6 +132,8 @@ public class SimpleTest {
         gs1.constants.put("#2", 0);
         gs2.constants.put("#1", 7);
         gs2.constants.put("#2", 0);
+        gs1.constants.put("#3", 1);
+        gs2.constants.put("#3", 1);
         int[][] edges1 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
                 { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
         int[][] edges2 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
@@ -139,13 +142,13 @@ public class SimpleTest {
             Vertex v1 = gs1.new Vertex(edge[0]);
             Vertex v2 = gs1.new Vertex(edge[1]);
             GraphStructure.Edge dEdge = gs1.new Edge(v1, v2);
-            ((GraphStructure.E) gs1.relations.get("E")).getEdges().add(dEdge);
+            ((GraphStructure.E) gs1.relations.get("E")).addEdge(dEdge);
         }
         for (int[] edge : edges2) {
             Vertex v1 = gs2.new Vertex(edge[0]);
             Vertex v2 = gs2.new Vertex(edge[1]);
             GraphStructure.Edge dEdge = gs2.new Edge(v1, v2);
-            ((GraphStructure.E) gs2.relations.get("E")).getEdges().add(dEdge);
+            ((GraphStructure.E) gs2.relations.get("E")).addEdge(dEdge);
         }
         FOkATFA automaton1 = new FOkATFA(
             new ArrayList<String>() {
@@ -169,14 +172,10 @@ public class SimpleTest {
         visitor1.visit(tree);
         FOkVisitor visitor2 = new FOkVisitor(gs2);
         visitor2.visit(tree);
-        FormulaContext formulaContext1 = visitor1.getRootFormula();
-        FormulaContext formulaContext2 = visitor2.getRootFormula();
         System.out.println("");
         try {
-            boolean accepts1 = automaton1.accept(formulaContext1);
-            boolean accepts2 = automaton2.accept(formulaContext2);
-            System.out.println("The automaton 1 " + (accepts1 ? "accepts" : "rejects") + " the formula");
-            System.out.println("The automaton 2 " + (accepts2 ? "accepts" : "rejects") + " the formula");
+            System.out.println("The automaton 1 " + (automaton1.accepts(visitor1) ? "accepts" : "rejects") + " the formula");
+            System.out.println("The automaton 2 " + (automaton2.accepts(visitor2) ? "accepts" : "rejects") + " the formula");
         } catch (Exception e) {
             e.printStackTrace();
         }

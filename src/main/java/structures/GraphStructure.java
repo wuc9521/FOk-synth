@@ -16,6 +16,7 @@ public class GraphStructure extends Structure<Integer> {
     // relations: Map<String, Relation>
     // domain: Set<Element>
     // pos: boolean
+    // relationMap: Map<Relation, Set<List<Element>>>
 
     // explicitly invoke the constructor of the superclass if superclass does not
     // have a default constructor
@@ -39,13 +40,19 @@ public class GraphStructure extends Structure<Integer> {
     /**
      * represents an directed edge in the graph.
      */
-    @AllArgsConstructor
-    @NoArgsConstructor
     @Getter
     @Setter
     public class E extends Relation {
         private final int arity = 2;
-        private List<Edge> edges = new ArrayList<>();
+
+        public List<Edge> getEdges() {
+            return this.getTuples().stream().map(tuple -> new Edge((Vertex) tuple.get(0), (Vertex) tuple.get(1)))
+            .toList();
+        }
+
+        public void addEdge(Edge edge) {
+            this.addTuple(Arrays.asList(edge.v1, edge.v2));
+        }
 
         public boolean holds(Edge edge) {
             return this.holds(Arrays.asList(edge.v1, edge.v2));
@@ -60,7 +67,7 @@ public class GraphStructure extends Structure<Integer> {
             if (args.size() != this.arity) {
                 return false;
             }
-            for (Edge edge : this.edges) {
+            for (Edge edge : this.getEdges()) {
                 if (edge.v1.equals(args.get(0)) && edge.v2.equals(args.get(1))) {
                     return true;
                 }

@@ -28,7 +28,6 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     // maybe useful for the reuse of the variables.
     private List<ParserRuleContext> contexts = new ArrayList<>();
     private Assignment assignment;
-    private boolean shouldStop = false;
     @Getter
     private FormulaContext rootFormula = null;
 
@@ -38,23 +37,6 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
 
     public FOkVisitor(Structure<T> structure) {
         this.structure = structure;
-    }
-
-    /**
-     * This method is used to pause the traversal of the tree.
-     */
-    private void pauseVisit() {
-        this.shouldStop = true;
-    }
-
-    /**
-     * This method is used to resume the traversal of the tree.
-     */
-    public void resumeVisit() {
-        this.shouldStop = false;
-        this.visitChildren(
-            this.contexts.remove(this.contexts.size() - 1) // don't forget to remove the last element.
-        );
     }
 
     @Override
@@ -67,9 +49,6 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     public Void visitChildren(RuleNode node) {
         if (node instanceof ParserRuleContext) {
             this.contexts.add((ParserRuleContext) node);
-        }
-        if (node instanceof FormulaContext) {
-            this.pauseVisit();
         }
         return super.visitChildren(node); // continue the traversal
     }
@@ -98,15 +77,13 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
      */
     @Override
     public Void visitFormula(FormulaContext ctx) {
-        if (this.shouldStop) {
-            return null;
-        }
         if (this.rootFormula == null) {
             this.rootFormula = ctx;
         }
         FormulaContext fCtx = (FormulaContext) ctx;
         if (fCtx.qop != null) { // case 3
             this.allVarSet.add(fCtx.VARIABLE());
+            // I keep this because this might be useful for the reuse of the variables.
         }
         return visitChildren(ctx);
     }
@@ -133,7 +110,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             }
             FormulaContext fCtx = (FormulaContext) parent;
             bdVarTable.put(
-                ctx.VARIABLE(),
+                ctx.VARIABLE(), 
                 new Pair<>(fCtx.qop, fCtx.VARIABLE())
             );
         }
@@ -309,5 +286,13 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     public HashMap<TerminalNode, Pair<Token, TerminalNode>> getBdVarTable() {
         tree.accept(this);
         return bdVarTable;
+    }   
+
+    /**
+     * @param ctx The context of the formula.
+     * @return the term's value
+     */
+    public T getTermVal(TermContext ctx) {
+        return calTermVal(ctx);
     }
 }
