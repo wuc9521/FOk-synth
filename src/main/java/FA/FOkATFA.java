@@ -27,7 +27,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
 
     private final Set<TState> states; // the set of states of the automaton
     private TState initialState = new TState(null); // the initial state of the automaton
-    private Set<TState> currentStates = new HashSet<>(); // the current state of the automaton
+    private Set<TState> currentStates = ConcurrentHashMap.newKeySet(); // the current state of the automaton
     private FOkVisitor<T> visitor; // the visitor to visit the parse tree
     private Structure<T> structure; // the structure for the automaton to run on
     private Set<Transition> transitions = new HashSet<>(); // the set of transitions of the automaton
@@ -44,7 +44,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     public FOkATFA(List<String> vars, Structure<T> structure) {
         this.states = new HashSet<>();
         this.visitor = new FOkVisitor<>(structure);
-        this.executor = Executors.newFixedThreadPool(8); // the thread pool for the transitions
+        this.executor = Executors.newCachedThreadPool(); // the thread pool for the transitions
         // initialize all the states by invoking the generateTuple method
         TupleGenerator.generateKTuples(vars.size(), new ArrayList<>(structure.domain)).forEach(tuple -> { // tuple:
                                                                                                           // List<Element>
@@ -68,7 +68,8 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     }
 
     @AllArgsConstructor
-    @Getter @Setter
+    @Getter
+    @Setter
     public class TState implements NFA.State<Assignment> {
         private boolean isAccepting = false; // whether the state is accepting
         private Assignment assignment; // the assignment of all the variables
@@ -186,7 +187,6 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      */
     @Override
     public Set<State<Assignment>> transition(State<Assignment> state, FormulaContext input) {
-        System.out.println("transition() to " + input.getText());
         Set<TState> nextStates = new HashSet<>();
         this.currentStates.add((TState) state); // add the current state to the set of current states
         if (input.NOT() != null) { // case 1: δ (γ, ¬) = (γ', 1)
@@ -375,7 +375,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
             futures.add(executor.submit(() -> {
                 Set<State<Assignment>> rawStates = transition(state, input.formula(0));
                 return rawStates.stream().map(s -> (TState) s).collect(Collectors.toSet());
-            }));   
+            }));
         }
         switch (input.qop.getType()) {
             case FOkParser.FORALL:
@@ -459,5 +459,6 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         return resultStates;
     }
 }
-// TODO: 关键, 在递归的过程中, transition 函数的第一个参数是接下来所有的状态的集合, 第二个参数是接下来token的集合. 实际上在递归的过程中就解释了转移函数.
+// TODO: 关键, 在递归的过程中, transition 函数的第一个参数是接下来所有的状态的集合, 第二个参数是接下来token的集合.
+// 实际上在递归的过程中就解释了转移函数.
 // TODO: 一个个check一下有没有出错

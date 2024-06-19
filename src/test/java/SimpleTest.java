@@ -113,44 +113,70 @@ public class SimpleTest {
 
     @Test
     public void automataAcceptsTest() {
-        // String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
-        String input = "~(exists x . (E(#1, x) & E(x, #2)))";
+        String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
+        // String input = "~(exists x . (E(x, #2)))";
         CharStream charStream = CharStreams.fromString(input);
         FOkLexer lexer = new FOkLexer(charStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
         
-        GraphStructure graphSturcture = new GraphStructure(true);
+        GraphStructure gs1 = new GraphStructure(true);
+        GraphStructure gs2 = new GraphStructure(false);
         for (int i = 0; i < 8; i++) {
-            graphSturcture.addVertex(i);
+            gs1.addVertex(i);
+            gs2.addVertex(i);
         }
-        graphSturcture.constants.put("#1", 7);
-        graphSturcture.constants.put("#2", 0);
-        int[][] edges = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
+        gs1.constants.put("#1", 7);
+        gs1.constants.put("#2", 0);
+        gs2.constants.put("#1", 7);
+        gs2.constants.put("#2", 0);
+        int[][] edges1 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
                 { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
-        for (int[] edge : edges) {
-            Vertex v1 = graphSturcture.new Vertex(edge[0]);
-            Vertex v2 = graphSturcture.new Vertex(edge[1]);
-            GraphStructure.Edge dEdge = graphSturcture.new Edge(v1, v2);
-            ((GraphStructure.E) graphSturcture.relations.get("E")).getEdges().add(dEdge);
+        int[][] edges2 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
+                { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 }, {7, 6}, {6, 7}};
+        for (int[] edge : edges1) {
+            Vertex v1 = gs1.new Vertex(edge[0]);
+            Vertex v2 = gs1.new Vertex(edge[1]);
+            GraphStructure.Edge dEdge = gs1.new Edge(v1, v2);
+            ((GraphStructure.E) gs1.relations.get("E")).getEdges().add(dEdge);
         }
-        FOkATFA automaton = new FOkATFA(
+        for (int[] edge : edges2) {
+            Vertex v1 = gs2.new Vertex(edge[0]);
+            Vertex v2 = gs2.new Vertex(edge[1]);
+            GraphStructure.Edge dEdge = gs2.new Edge(v1, v2);
+            ((GraphStructure.E) gs2.relations.get("E")).getEdges().add(dEdge);
+        }
+        FOkATFA automaton1 = new FOkATFA(
             new ArrayList<String>() {
                 {
                     add("x");
                     add("y");
                 }
             }, // the list of variables
-            graphSturcture
+            gs1
         );
-        FOkVisitor visitor = new FOkVisitor(graphSturcture);
-        visitor.visit(tree);
-        FormulaContext formulaContext = visitor.getRootFormula();
+        FOkATFA automaton2 = new FOkATFA(
+            new ArrayList<String>() {
+                {
+                    add("x");
+                    add("y");
+                }
+            }, // the list of variables
+            gs2
+        );
+        FOkVisitor visitor1 = new FOkVisitor(gs1);
+        visitor1.visit(tree);
+        FOkVisitor visitor2 = new FOkVisitor(gs2);
+        visitor2.visit(tree);
+        FormulaContext formulaContext1 = visitor1.getRootFormula();
+        FormulaContext formulaContext2 = visitor2.getRootFormula();
         System.out.println("");
         try {
-            boolean accepts = automaton.accept(formulaContext);
-            System.out.println("The automaton " + (accepts ? "accepts" : "rejects") + " the formula");
+            boolean accepts1 = automaton1.accept(formulaContext1);
+            boolean accepts2 = automaton2.accept(formulaContext2);
+            System.out.println("The automaton 1 " + (accepts1 ? "accepts" : "rejects") + " the formula");
+            System.out.println("The automaton 2 " + (accepts2 ? "accepts" : "rejects") + " the formula");
         } catch (Exception e) {
             e.printStackTrace();
         }
