@@ -16,6 +16,7 @@ import structures.GraphStructure.Vertex;
 import visitors.FOkVisitor;
 import visitors.TransitionVisitor;
 import utils.Colors;
+import antlr.FOkParser.FormulaContext;
 
 
 public class SimpleTest {
@@ -35,7 +36,7 @@ public class SimpleTest {
     }
 
     @Test
-    public void automataTest() {
+    public void automataInitTest() {
         String input = "forall x . ( E(#1, x) -> (exists y . ( E(x, y) & E(y, #2))))";
         CharStream charStream = CharStreams.fromString(input);
         FOkLexer lexer = new FOkLexer(charStream);
@@ -80,7 +81,6 @@ public class SimpleTest {
             });
             System.out.println((isAccepting ? "} is accepting" : "} is rejecting") + Colors.RESET); // 结束颜色并重置
         });
-        
     }
 
     @Test
@@ -108,6 +108,51 @@ public class SimpleTest {
             for (int j = 0; j < 8; j++) {
                 gs[i].addVertex(j);
             }
+        }
+    }
+
+    @Test
+    public void automataAcceptsTest() {
+        // String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
+        String input = "~(exists x . (E(#1, x) & E(x, #2)))";
+        CharStream charStream = CharStreams.fromString(input);
+        FOkLexer lexer = new FOkLexer(charStream);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        FOkParser parser = new FOkParser(tokens);
+        ParseTree tree = parser.formula();
+        
+        GraphStructure graphSturcture = new GraphStructure(true);
+        for (int i = 0; i < 8; i++) {
+            graphSturcture.addVertex(i);
+        }
+        graphSturcture.constants.put("#1", 7);
+        graphSturcture.constants.put("#2", 0);
+        int[][] edges = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
+                { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
+        for (int[] edge : edges) {
+            Vertex v1 = graphSturcture.new Vertex(edge[0]);
+            Vertex v2 = graphSturcture.new Vertex(edge[1]);
+            GraphStructure.Edge dEdge = graphSturcture.new Edge(v1, v2);
+            ((GraphStructure.E) graphSturcture.relations.get("E")).getEdges().add(dEdge);
+        }
+        FOkATFA automaton = new FOkATFA(
+            new ArrayList<String>() {
+                {
+                    add("x");
+                    add("y");
+                }
+            }, // the list of variables
+            graphSturcture
+        );
+        FOkVisitor visitor = new FOkVisitor(graphSturcture);
+        visitor.visit(tree);
+        FormulaContext formulaContext = visitor.getRootFormula();
+        System.out.println("");
+        try {
+            boolean accepts = automaton.accept(formulaContext);
+            System.out.println("The automaton " + (accepts ? "accepts" : "rejects") + " the formula");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

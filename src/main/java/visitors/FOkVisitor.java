@@ -2,6 +2,8 @@ package visitors;
 
 import antlr.*;
 import antlr.FOkParser.*;
+import lombok.Getter;
+
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.*;
@@ -27,6 +29,8 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     private List<ParserRuleContext> contexts = new ArrayList<>();
     private Assignment assignment;
     private boolean shouldStop = false;
+    @Getter
+    private FormulaContext rootFormula = null;
 
     public FOkVisitor() {
         super();
@@ -96,6 +100,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     public Void visitFormula(FormulaContext ctx) {
         if (this.shouldStop) {
             return null;
+        }
+        if (this.rootFormula == null) {
+            this.rootFormula = ctx;
         }
         FormulaContext fCtx = (FormulaContext) ctx;
         if (fCtx.qop != null) { // case 3
@@ -251,7 +258,10 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             }
             TerminalNode var = tCtx.VARIABLE();
             assert this.assignment.getKvMap().containsKey(var.getText());
-            return ((T) this.assignment.getKvMap().get(var.getText()).getValue());
+            if (this.assignment.getKvMap().get(var.getText()).getClass().equals(Data.class)) {
+                return null;
+            }
+            return (T) this.assignment.getKvMap().get(var.getText()).getValue();
         } else if (ctx.getChild(0) == ((TermContext) ctx).CONST()) { // case 3: checked
             // get the value of the const
             TermContext tCtx = (TermContext) ctx;

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @AllArgsConstructor
 public abstract class Structure<DType> {
     @Setter
@@ -13,12 +14,31 @@ public abstract class Structure<DType> {
     public final Map<String, Relation> relations = new HashMap<>(); // the relations in the structure
     public final Map<String, DType> constants = new HashMap<>(); // the constants in the structure
 
-    @Setter @Getter
+    @Getter
     @AllArgsConstructor
     public class Element { // define the type of elements in the structure
         public DType value;
-        
+        private boolean undefined = false;
+        public Element(DType value) {
+            this.value = value;
+            this.undefined = false;
+        }
+        public Element() {
+            this.undefined = true;
+        }
+
+        /**
+         * We specially define two elements to be equal if they are both undefined.
+         * check if the element is undefined
+         * @param element the element to be checked
+         * @return whether the element is undefined
+         */
         public boolean equals(Element element){
+            if(this.undefined && element.undefined) {
+                return true;
+            } else if(this.undefined || element.undefined) {
+                return false;
+            }
             return this.value.equals(element.value);
         }
     }

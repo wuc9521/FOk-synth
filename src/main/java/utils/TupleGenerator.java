@@ -7,7 +7,9 @@ public class TupleGenerator {
 
     public static <T> List<List<T>> generateKTuples(int k, List<T> values) {
         List<List<T>> results = new ArrayList<>();
-        generateKTuplesHelper(k, values, new ArrayList<>(), results);
+        List<T> extendedValues = new ArrayList<>(values);
+        extendedValues.add(null);  // 注意这里的类型转换
+        generateKTuplesHelper(k, extendedValues, new ArrayList<>(), results);
         return results;
     }
 

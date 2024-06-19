@@ -9,5 +9,6 @@ A quick start:
 ```bash
 make all
 make compile
-make run
+make test   # run tests
+make run    # run the project
 ```

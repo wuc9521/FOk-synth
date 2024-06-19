@@ -18,7 +18,7 @@ public abstract class NFA<SType, IType> {
      * @param input the input to be checked
      * @return whether the automaton accepts the input
      */
-    public abstract boolean accept(IType input); // check if the automaton accepts the input
+    public abstract boolean accept(IType input) throws Exception; // check if the automaton accepts the input
 
     /**
      * determinize the NFA to a DFA
@@ -40,6 +40,4 @@ public abstract class NFA<SType, IType> {
      * @return the intersected automaton
      */
     public abstract NFA<SType, IType> intersect(NFA<SType, IType> automaton); // intersect two automata
-
-    public abstract boolean run(IType input) throws Exception; // run the automaton
 }
