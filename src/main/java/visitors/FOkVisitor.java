@@ -235,9 +235,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             }
             TerminalNode var = tCtx.VARIABLE();
             assert this.assignment.getKvMap().containsKey(var.getText());
-            if (this.assignment.getKvMap().get(var.getText()).getClass().equals(Data.class)) {
+            if(this.assignment.getKvMap().get(var.getText()) == null) {
                 return null;
-            }
+            } 
             return (T) this.assignment.getKvMap().get(var.getText()).getValue();
         } else if (ctx.getChild(0) == ((TermContext) ctx).CONST()) { // case 3: checked
             // get the value of the const
@@ -292,7 +292,8 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
      * @param ctx The context of the formula.
      * @return the term's value
      */
-    public T getTermVal(TermContext ctx) {
+    public T getTermVal(TermContext ctx, Assignment assignment) {
+        this.assignment = assignment;
         return calTermVal(ctx);
     }
 }
