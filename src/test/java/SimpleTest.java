@@ -113,8 +113,10 @@ public class SimpleTest {
 
     @Test
     public void automataAcceptsTest() {
+        // String input = "~(forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2)))))";
         // String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
         // String input = "E(#1, #4)"; // E(7, 6)
+        // String input = "~ (E(#1, #4))"; // E(7, 6)
         String input = "~(exists x . (E(x, #4)))"; // ~E(x, 6)
         // String input = "exists x . (E(x, #4))"; // E(x, 6)
         // String input = "$F"; 
