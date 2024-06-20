@@ -116,7 +116,8 @@ public class SimpleTest {
         // String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
         // String input = "E(#1, #4)"; // E(7, 6)
         String input = "~(exists x . (E(x, #4)))"; // ~E(x, 6)
-        // String input = "exists x . (E(x, #4))"; // 9个线程, 但是每次currentState只会有一个.
+        // String input = "exists x . (E(x, #4))"; // E(x, 6)
+        // String input = "$F"; 
         CharStream charStream = CharStreams.fromString(input);
         FOkLexer lexer = new FOkLexer(charStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
