@@ -17,12 +17,10 @@ import org.antlr.v4.runtime.Token;
  * This visitor decides the value of the formula.
  */
 public class DecideVisitor<T> extends FOkParserBaseVisitor<Void>{
-    private boolean value = false;
     private Structure<T> structure;
 
     // the hashmap to store the bound variables in the formula.
     private HashMap<TerminalNode, Pair<Token, TerminalNode>> bdVarTraceTable = new HashMap<>();
-    private HashMap<TerminalNode, T> bdVarValTable = new HashMap<>();
     private Set<TerminalNode> allVarSet = new HashSet<>(); // collect all the variables in the formula
 
 

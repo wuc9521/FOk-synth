@@ -1,7 +1,6 @@
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import antlr.*;
-import visitors.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -12,9 +11,5 @@ public class Main {
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
         System.out.println(tree.toStringTree(parser));
-
-        // print all the variables in the formula
-        FOkVisitor visitor = new FOkVisitor();
-        visitor.visit(tree);
     }
 }

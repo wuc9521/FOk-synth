@@ -3,9 +3,7 @@ package structures;
 import java.util.*;
 
 import FO.Structure;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 public class GraphStructure extends Structure<Integer> {

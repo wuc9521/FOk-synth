@@ -1,18 +1,18 @@
 package FA;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-
 import lombok.*;
-import utils.TupleGenerator;
-import visitors.FOkVisitor;
+import utils.*;
+import visitors.*;
+import antlr.*;
 import FO.Assignment;
 import FO.Structure;
-import utils.Data;
+import AST.*;
 
 import java.util.stream.Collectors;
 
-import antlr.FOkParser;
+import org.antlr.v4.runtime.tree.*;
+
 import antlr.FOkParser.FormulaContext;
 
 /**
@@ -20,7 +20,7 @@ import antlr.FOkParser.FormulaContext;
  */
 @Getter
 public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
-
+    private final int largestFormulaSize = 30;
     protected Set<TState> states = new HashSet<>(); // the set of states of the automaton
 
     @Setter
@@ -57,6 +57,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     public FOkATFA(List<String> vars, Structure<T> structure) {
         this.structure = structure;
         this.visitor = new FOkVisitor<>(structure);
+        this.lookingForTrueAssignment = structure.pos;
         // initialize all the states by invoking the generateTuple method
         TupleGenerator.generateKTuples(vars.size(), new ArrayList<>(structure.domain)).forEach(tuple -> { // tuple:
                                                                                                           // List<Element>
@@ -124,7 +125,8 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
                 }
                 if (this.assignment.getKvMap().get(key) == null || state.assignment.getKvMap().get(key) == null) {
                     if (this.assignment.getKvMap().get(key) != state.assignment.getKvMap().get(key)) {
-                        return false; // if one of the values is null, then the two states are not equal
+                        return false; // if one of the values is null and the other is not then the two states are not
+                                      // equal
                     }
                 } else if (!this.assignment.getKvMap().get(key).equals(state.assignment.getKvMap().get(key))) {
                     return false;
@@ -233,10 +235,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         return this.currentStates.stream().anyMatch(s -> s.isAccepting());
     }
 
-    /**
-     * run the automaton
-     * run 是必不可少的, 必须要很好地定义转移函数, 不能使用check来蒙混过关.
-     */
+    // run() -> transition() -> handler() -> accept() -> run()
     private void run() {
         Set<TState> newStates = new HashSet<>();
         for (TState state : this.currentStates) {
@@ -249,20 +248,6 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
             }
         }
         this.currentStates = newStates;
-    }
-
-    private void printCurrentStates() {
-        for (TState s : this.currentStates) {
-            s.getAssignment().getKvMap().forEach((k, v) -> {
-                // System.out.print(k + " -> " + v.getValue() + " ");
-                if (v.getValue() != null) {
-                    System.out.print(k + " -> " + v.getValue() + " ");
-                } else {
-                    System.out.print(k + " -> " + "null ");
-                }
-            });
-            System.out.println();
-        }
     }
 
     /**
@@ -291,10 +276,9 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      * @param input        the input formula: formula op=(IFF | IMPLIES | AND | OR)
      *                     formula
      * @param type         the type of the operation
-     * @throws InterruptedException
-     * @throws ExecutionException
+     * @throws Exception if the operation is not supported
      */
-    protected void handleOp(State<Assignment> currentState, FormulaContext input) {
+    protected void handleOp(State<Assignment> currentState, FormulaContext input) throws Exception {
         assert input.op != null; // caller should ensure that the input is an operation
         final int opNum = input.formula().size();
         assert opNum == 2; // the operation should have two operands
@@ -307,12 +291,12 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         if (this.lookingForTrueAssignment) {
             switch (input.op.getType()) {
                 case FOkParser.AND:
-                    this.concurrent2wayTransition((TState) currentState, input);
+                    this.concurrentTransition(input);
                     break;
                 case FOkParser.OR:
-                    this.shortCut2wayTransition((TState) currentState, input);
+                    this.shortCutTransition(input);
                     break;
-                case FOkParser.IMPLIES: // TODO: finish the implementation
+                case FOkParser.IMPLIES:
                     break;
                 default:
                     break;
@@ -320,10 +304,10 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         } else {
             switch (input.op.getType()) {
                 case FOkParser.AND:
-                    this.shortCut2wayTransition((TState) currentState, input);
+                    this.shortCutTransition(input);
                     break;
                 case FOkParser.OR:
-                    this.concurrent2wayTransition((TState) currentState, input);
+                    this.concurrentTransition(input);
                     break;
                 case FOkParser.IMPLIES:
                     break;
@@ -335,44 +319,50 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
 
     /**
      * transition for the concurrent automata
+     * 根据定义, 读取 and 和 or 的时候不转移状态, 所以只需要传一个参数.
      * 
-     * @param currentState the current state of the automaton
-     * @param input        the input formula: formula op=(IFF | IMPLIES | AND | OR)
-     *                     formula
-     * @return the set of states that the automaton can transit to
+     * @param input the input formula: formula op=(IFF | IMPLIES | AND | OR)
+     *              formula
      */
-    private void concurrent2wayTransition(TState currentState, FormulaContext input) {
-        for (int i = 0; i < this.subAutomata.size(); i++) {
-            this.subAutomata.get(i).currentFormula = input.formula(i);
-            Set<TState> updatedStates = this.subAutomata.get(i)
-                    .transition(currentState, this.subAutomata.get(i).currentFormula)
-                    .stream()
-                    .map(s -> (TState) s).collect(Collectors.toSet());
-            this.currentStates.addAll(updatedStates);
-            this.merge(this.subAutomata.get(i), mode.INTERSECT);
+    private void concurrentTransition(FormulaContext input) throws Exception {
+        assert this.subAutomata.size() == 2;
+        for (int i = 0; i < 2; i++) {
+            if (!this.subAutomata.get(i).accepts(input.formula(i))) {
+                this.currentStates = Collections.emptySet();
+                return;
+            }
         }
     }
 
     /**
      * transition for the short-cut automata
      * 
-     * @param currentState the current state of the automaton
-     * @param input        the input formula: formula op=(IFF | IMPLIES | AND | OR)
-     *                     formula
-     * @return the set of states that the automaton can transit to
+     * @param input the input formula: formula op=(IFF | IMPLIES | AND | OR)
+     *              formula
      */
-    private void shortCut2wayTransition(TState currentState, FormulaContext input) {
+    private void shortCutTransition(FormulaContext input) throws Exception {
         for (int i = 0; i < this.subAutomata.size(); i++) {
-            this.subAutomata.get(i).currentFormula = input.formula(i);
-            Set<TState> updatedStates = subAutomata.get(i).transition(currentState, subAutomata.get(i).currentFormula)
-                    .stream()
-                    .map(s -> (TState) s).collect(Collectors.toSet());
-            if (!updatedStates.isEmpty()) {
-                this.currentStates = updatedStates;
-                this.merge(this.subAutomata.get(i), mode.UNION);
-                break;
+            if (this.subAutomata.get(i).accepts(input.formula(i))) {
+                // 注意这里是很强的条件, 子自动机甚至都!接受!了.
+                // 那么当前自动机就要进入到一个singleton中就可以了, 因为我们确保它可以接受.
+                this.currentStates = this.subAutomata.get(i).currentStates;
+                return;
             }
         }
+    }
+
+    /**
+     * get the similar states of the current states except for the given variable
+     * 
+     * @param var the variable to be excluded
+     * @return the similar states of the current states except for the given
+     *         variable
+     */
+    private List<TState> getSimilarStates(String var) {
+        List<TState> similarStates = this.states.stream().filter(
+                s -> this.currentStates.stream().anyMatch(s_ -> s_.equalsExceptVar(s, var)))
+                .collect(Collectors.toList());
+        return similarStates;
     }
 
     /**
@@ -382,15 +372,11 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      * @param input        the input formula:
      *                     qop=(FORALL | EXISTS) VARIABLE DOT LPAREN formula RPAREN
      * @param type         the type of the quantifier
-     * @throws InterruptedException
-     * @throws ExecutionException
+     * @throws Exception if the quantifier is not supported
      */
     protected void handleQuantifier(State<Assignment> currentState, FormulaContext input) throws Exception {
         String var = input.VARIABLE().getText();
-
-        List<TState> similarStates = this.states.stream().filter(
-                s -> this.currentStates.stream().anyMatch(s_ -> s_.equalsExceptVar(s, var)))
-                .collect(Collectors.toList());
+        List<TState> similarStates = this.getSimilarStates(var);
 
         // find all the states that are the same as the current states except for the
         // given variable
@@ -424,91 +410,41 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     /**
      * transition for the concurrent automata
      * 
-     * @param domainStates
-     * @param input
-     * @return
+     * @param domainStates the domain states of the automaton
+     * @param input        the input formula: qop=(FORALL | EXISTS) VARIABLE DOT
+     *                     LPAREN formula RPAREN
      */
-    // private void concurrentTransition(List<TState> domainStates, FormulaContext
-    // input) {
-    // for (int i = 0; i < this.subAutomata.size(); i++) {
-    // this.subAutomata.get(i).currentFormula = input;
-    // Set<TState> updatedStates =
-    // this.subAutomata.get(i).transition(domainStates.get(i), input)
-    // .stream()
-    // .map(s -> (TState) s).collect(Collectors.toSet());
-    // this.currentStates.addAll(updatedStates.stream().map(s -> (TState)
-    // s).collect(Collectors.toSet()));
-    // this.merge(this.subAutomata.get(i), mode.INTERSECT);
-    // }
-    // }
     private void concurrentTransition(List<TState> domainStates, FormulaContext input) throws Exception {
+        assert domainStates.size() == this.subAutomata.size();
         for (int i = 0; i < this.subAutomata.size(); i++) {
+            subAutomata.get(i).currentFormula = input;
             if (!this.subAutomata.get(i).accepts(input)) {
+                // System.out.println(input.getText() + " is not accepted by the automaton " + i + "("
+                //         + this.subAutomata.get(i).lookingForTrueAssignment + ")");
                 this.currentStates = Collections.emptySet();
+                return;
             }
         }
-        // for (int i = 0; i < this.subAutomata.size(); i++) {
-        //     this.subAutomata.get(i).currentFormula = input;
-        //     Set<TState> updatedStates = this.subAutomata.get(i).transition(domainStates.get(i), input)
-        //             .stream()
-        //             .map(s -> (TState) s).collect(Collectors.toSet());
-        //     this.currentStates.addAll(updatedStates.stream().map(s -> (TState) s).collect(Collectors.toSet()));
-        //     this.merge(this.subAutomata.get(i), mode.INTERSECT);
-        // }
-    }
-    // private void concurrentTransition(List<TState> domainStates, FormulaContext
-    // input) {
-    // Set<TState> updatedStates = new HashSet<>();
-    // try {
-    // for (int i = 0; i < this.subAutomata.size(); i++) {
-    // this.subAutomata.get(i).currentFormula = input;
-    // if (!this.subAutomata.get(i).accepts(input)) {
-    // return; // 如果有一个子自动机不接受, 那么就直接返回
-    // }
-    // Set<TState> curAutStates = this.subAutomata.get(i).currentStates.stream()
-    // .map(s -> (TState) s).collect(Collectors.toSet());
-    // updatedStates.addAll(curAutStates.stream().map(s -> (TState)
-    // s).collect(Collectors.toSet()));
-    // }
-    // for (int i = 0; i < this.subAutomata.size(); i++) {
-    // this.merge(this.subAutomata.get(i), mode.INTERSECT);
-    // }
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // }
-    // }
-
-    private void printCurrentAcceptingStates() {
-        // 假设已经运行完毕
-        this.currentStates.forEach(s -> {
-            if (s.isAccepting()) {
-                s.getAssignment().getKvMap().forEach((k, v) -> {
-                    System.out.print(k + " -> " + v.getValue() + " ");
-                });
-                System.out.println();
-            }
-        });
+        this.currentStates = domainStates.stream().collect(Collectors.toSet());
     }
 
     /**
      * transition for the short-cut automata
      * 
-     * @param domainStates
-     * @param input
-     * @return
+     * @param domainStates the domain states of the automaton
+     * @param input        the input formula: qop=(FORALL | EXISTS) VARIABLE DOT
+     *                     LPAREN formula RPAREN
+     * @throws Exception if the automaton fails to accept the input
      */
-    private void shortCutTransition(List<TState> domainStates, FormulaContext input) {
+    private void shortCutTransition(List<TState> domainStates, FormulaContext input) throws Exception {
         for (int i = 0; i < this.subAutomata.size(); i++) {
             subAutomata.get(i).currentFormula = input;
-            Set<TState> updatedStates = subAutomata.get(i).transition(domainStates.get(i), input)
-                    .stream()
-                    .map(s -> (TState) s).collect(Collectors.toSet());
-            if (!updatedStates.isEmpty()) {
-                this.currentStates = updatedStates;
-                this.merge(this.subAutomata.get(i), mode.UNION);
-                break;
+            if (this.subAutomata.get(i).accepts(input)) {
+                this.currentStates = Collections.singleton(domainStates.get(i));
+                return;
             }
         }
+        this.currentStates = Collections.emptySet(); // if none of the automata accepts the input
     }
 
     /**
@@ -519,7 +455,6 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      *                     4 | RELATION (LPAREN term (COMMA term)* RPAREN)?
      *                     5 | term EQUALS term
      *                     6 | value
-     * @return the set of states that the automaton can transit to
      */
     protected void handleRelation(State<Assignment> currentState, FormulaContext input) {
         // actually '=' is just a binary relation and 'value' is just a nullary relation
@@ -527,39 +462,47 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         Assignment assignment = ((TState) currentState).getAssignment();
         this.currentFormula = null; // this line is ESSNTIAL
         if (input.RELATION() != null) { // 只要读到关系肯定要 return
-            String key = input.RELATION().getText();
-            if (this.structure.relations.containsKey(key)) {
-                isTrueUnderAssignment = this.structure.relations.get(key).holds(
+            String relationName = input.RELATION().getText();
+            boolean allVarsOfRelationDefined = true;
+            for (int i = 0; i < input.term().size(); i++) {
+                if (this.visitor.getTermVal(input.term(i), assignment) == null) {
+                    allVarsOfRelationDefined = false; // checked
+                    break;
+                }
+            } // all the variables should be defined for the automata to accept the input
+            if (this.structure.relations.containsKey(relationName)) {
+                isTrueUnderAssignment = this.structure.relations.get(relationName).holds(
                         input.term().stream()
                                 .map(t -> this.structure.new Element(this.visitor.getTermVal(t, assignment)))
                                 .collect(Collectors.toList()));
             }
-            // if the formula is what it should be under the assignment of the state,
-            if (isTrueUnderAssignment == this.lookingForTrueAssignment) {
-                boolean allVarsOfRelationDefined = true;
-                for (int i = 0; i < input.term().size(); i++) {
-                    // 如果给关系的某一个参数赋值为null, 那么这个关系的变量就是 undefined.
-                    if (this.visitor.getTermVal(input.term(i), assignment) == null) {
-                        allVarsOfRelationDefined = false; // checked
-                        break;
-                    }
-                }
-                if (allVarsOfRelationDefined && (isTrueUnderAssignment == this.lookingForTrueAssignment)) {
-                    ((TState) currentState).setAccepting(true);
-                } else {
-                    ((TState) currentState).setAccepting(false);
-                }
-                this.currentStates = Collections.singleton((TState) currentState);
-                return;
+            if (!allVarsOfRelationDefined) { // 这里是下策. 不应该有
+                // for (int i = 0; i < input.term().size(); i++) {
+                // System.out.print(this.visitor.getTermVal(input.term(i), assignment) + " ");
+                // }
+                // System.out.println("not all vars of relation " + relationName + " are
+                // defined");
+                isTrueUnderAssignment = false;
             }
-            this.currentStates = Collections.emptySet();
+            if (isTrueUnderAssignment == this.lookingForTrueAssignment) {
+                ((TState) currentState).setAccepting(true);
+                this.currentStates = Collections.singleton((TState) currentState);
+            } else {
+                ((TState) currentState).setAccepting(false); // not accepting 表示拒绝
+                this.currentStates = Collections.emptySet(); // \emptyset 表示结束
+            }
+            // System.out.print("looking for " + this.lookingForTrueAssignment + "
+            // assignment, " + relationName
+            // + " is " + isTrueUnderAssignment + " under assingment ");
+            // this.printCurrentStates();
+            // System.out.println();
             return;
         } else if (input.EQUALS() != null) {
             isTrueUnderAssignment = this.structure.new Element(
                     this.visitor.getTermVal(input.term(0), assignment))
                     .equals(this.structure.new Element(this.visitor.getTermVal(input.term(1), assignment)));
         } else if (input.value() != null) {
-            isTrueUnderAssignment = input.value().getText().equals(Data.TRUE);
+            isTrueUnderAssignment = input.value().getText().equals(DataUtil.TRUE);
         }
         // if the formula is what it should be under the assignment of the state,
         if (isTrueUnderAssignment == this.lookingForTrueAssignment) {
@@ -573,7 +516,46 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     /**
      * @return the shortest formula that the automaton accepts
      */
-    public String shortestFormula() {
+    public String getShortestFormula(boolean isTrue) {
+        return this.getShortestFormula(isTrue, this.largestFormulaSize);
+    }
+
+    /**
+     * get the shortest formula that the automaton accepts
+     * 
+     * @param isTrue
+     * @param largestSize
+     * @return
+     */
+    public String getShortestFormula(boolean isTrue, int largestSize) {
+        Queue<AST> queue = new LinkedList<>();
+        FOkATFA<T> automaton = new FOkATFA<>(structure);
+        ASTGenerator generator = new ASTGenerator();
+        AST initialAst = new AST(); // Suppose AST has a default initial state that makes sense
+        queue.add(initialAst); // Start with a minimal AST
+
+        while (!queue.isEmpty()) {
+            AST currentAst = queue.poll();
+            if (currentAst.getSize() > largestSize) {
+                break; // Stop if the AST size exceeds the limit
+            }
+            Set<AST> grownAsts = generator.grow(currentAst); // Method to get all possible single-step extensions of the
+                                                             // AST
+            for (AST ast : grownAsts) {
+                String formulaString = ast.toString(); // Assume AST has a method to convert to string formula
+                ParseTree tree = ParserUtils.parse(formulaString);
+                if (tree != null) {
+                    try {
+                        if (automaton.accepts((FormulaContext) tree) == isTrue) {
+                            return formulaString;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                queue.add(ast); // Add new ASTs to queue for further exploration
+            }
+        }
         return null;
     }
 
@@ -585,7 +567,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     public FOkATFA<T> copy() {
         FOkATFA<T> copy = new FOkATFA<>(this.structure);
         copy.states.addAll(this.states);
-        copy.initialState = this.initialState; // TODO?
+        copy.initialState = this.initialState;
         copy.currentStates.addAll(this.currentStates);
         copy.visitor = this.visitor;
         copy.structure = this.structure;
@@ -593,79 +575,4 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         copy.lookingForTrueAssignment = this.lookingForTrueAssignment;
         return copy;
     }
-
-    /**
-     * copy the automaton
-     * 
-     * @param isLookingForTrueAssignment whether the automaton is looking for a true
-     *                                   assignment
-     * @return the copied automaton
-     */
-    public FOkATFA<T> copy(boolean isLookingForTrueAssignment) {
-        FOkATFA<T> copy = this.copy();
-        copy.lookingForTrueAssignment = isLookingForTrueAssignment;
-        return copy;
-    }
-
-    /**
-     * merge the information of the sub-automata
-     * 
-     * @param automaton the automaton to be merged with
-     * @param intersect if set to true, then should intersect all the accepting
-     *                  states
-     *                  if set to false, then should union all the accepting states
-     */
-    public void merge(FOkATFA<T> automaton, mode mode) {
-        this.currentFormula = automaton.currentFormula;
-        Set<TState> mergedStates = new HashSet<>();
-        switch (mode) {
-            case INTERSECT:
-                // System.out.print("These states in currentStates are accepting:");
-                // this.currentStates.forEach(s -> {
-                // if (s.isAccepting()) {
-                // s.getAssignment().getKvMap().forEach((k, v) -> {
-                // System.out.print(k + " -> " + v.getValue() + " ");
-                // });
-                // System.out.println();
-                // }
-                // });
-                // System.out.print("These states in automaton are accepting:");
-                // automaton.currentStates.forEach(s -> {
-                // if (s.isAccepting()) {
-                // s.getAssignment().getKvMap().forEach((k, v) -> {
-                // System.out.print(k + " -> " + v.getValue() + " ");
-                // });
-                // System.out.println();
-                // }
-                // });
-                for (TState state : this.currentStates) {
-                    for (TState otherState : automaton.currentStates) {
-                        if (state.equals(otherState) && state.isAccepting() && otherState.isAccepting()) {
-                            mergedStates.add(state); // only add states that are both accepting
-                        }
-                    }
-                }
-                // System.out.println("After merging, the accepting states are:");
-                // mergedStates.forEach(s -> {
-                // s.getAssignment().getKvMap().forEach((k, v) -> {
-                // System.out.print(k + " -> " + v.getValue() + " ");
-                // });
-                // System.out.println();
-                // });
-                break;
-            case UNION:
-                this.currentStates.addAll(automaton.currentStates);
-                mergedStates.addAll(this.currentStates);
-                for (TState state : mergedStates) {
-                    state.setAccepting(
-                            state.isAccepting() || automaton.currentStates.contains(state) && state.isAccepting());
-                }
-                break;
-            default:
-                break;
-        }
-        this.currentStates = mergedStates;
-    }
 }
-
-// TODO: 发现merge的实现其实(可能)没有问题

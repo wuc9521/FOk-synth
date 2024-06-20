@@ -4,10 +4,10 @@ import lombok.NoArgsConstructor;
 
 
 @NoArgsConstructor
-public class Data<T> {
+public class DataUtil<T> {
     public static final String TRUE = "$T";
     public static final String FALSE = "$F";
-    public static <T> Data<T> UNDEFINED() {
-        return new Data<T>();
+    public static <T> DataUtil<T> UNDEFINED() {
+        return new DataUtil<T>();
     }
 }

@@ -114,10 +114,10 @@ public class SimpleTest {
     @Test
     public void automataAcceptsTest() {
         // String input = "~(forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2)))))";
-        // String input = "forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
+        String input = "forall x . ( ~(E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
         // String input = "E(#1, #4)"; // E(7, 6)
         // String input = "~ (E(#1, #4))"; // E(7, 6)
-        String input = "~(exists x . (E(x, #4)))"; // ~E(x, 6)
+        // String input = "~(exists x . (E(x, #4)))"; // ~E(x, 6)
         // String input = "exists x . (E(x, #4))"; // E(x, 6)
         // String input = "$F"; 
         CharStream charStream = CharStreams.fromString(input);
@@ -134,11 +134,12 @@ public class SimpleTest {
         }
         gs1.constants.put("#1", 7);
         gs1.constants.put("#2", 0);
+        gs1.constants.put("#3", 1);
+        gs1.constants.put("#4", 6);
+
         gs2.constants.put("#1", 7);
         gs2.constants.put("#2", 0);
-        gs1.constants.put("#3", 1);
         gs2.constants.put("#3", 1);
-        gs1.constants.put("#4", 6);
         gs2.constants.put("#4", 6);
         int[][] edges1 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
                 { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
