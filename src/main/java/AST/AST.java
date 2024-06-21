@@ -1,10 +1,10 @@
 package AST;
 
-
 import lombok.Getter;
 
 import java.util.LinkedList;
 import java.util.List;
+import antlr.*;
 
 /**
  * Helper class for representing and manipulating Abstract Syntax Trees (AST)
@@ -12,24 +12,43 @@ import java.util.List;
  */
 @Getter
 public class AST {
-    // TODO: CFG 的构建要考虑 Pushdown Automata ?
     public enum FOk {
-        PROG, SENTENCE, FORMULA, TERM, VALUE, RELATION, EQUALS, NOT, IFF, IMPLIES, AND, OR, FORALL, EXISTS, VARIABLE,
-        DOT, LPAREN, RPAREN, COMMA
+        OP, // 逻辑运算符
+        QOP, // 量词
+        EQUALS, RELATION, // relation: R(x, y), E(x, y)
+        VALUE, // value: true, false
+        TERM, // term: functions, variables, constants
+        FORMULA, // 公式
+        NOT,
+        LPAREN,
+        RPAREN,
+        COMMA,
     }
 
     private int size; // The size of the AST
     private Node root; // The root of the AST
 
     public AST() {
-        this.root = null; // Initially, there's no root
+        this.root = new Node(FOk.FORMULA, null);
+    }
+
+    public AST(Node root) {
+        this.root = root;
+    }
+
+    public AST(FOk type, String value) {
+        this.root = new Node(type, value);
+    }
+
+    public AST(AST ast) {
+        this.root = ast.getRoot();
+        this.size = ast.getSize();
     }
 
     public Node getRoot() {
         return root;
     }
 
-    // Method to add a node as root or as a child of an existing node
     public void addNode(FOk type, String value, Node parent) {
         Node newNode = new Node(type, value);
         if (parent == null) {
@@ -61,14 +80,93 @@ public class AST {
             this.parent = parent;
         }
 
-        // Method to print tree from this node down
-        public void printTree(String prefix) {
-            System.out.println(prefix + type + ": " + value);
-            children.forEach(child -> child.printTree(prefix + "  "));
-        }
     }
 
-    public String toString(){
-        return null;
+    /**
+     * Convert the AST to a string (as a formula)
+     */
+    public String toString() {
+        if (root == null) {
+            return "";
+        }
+        return toStringHelper(root).trim();
+    }
+
+    /**
+     * Helper method to convert the AST to a string
+     * @param node the current node
+     * @return the string representation of the AST with the given node as the root
+     */
+    private String toStringHelper(Node node) {
+        StringBuilder sb = new StringBuilder();
+        switch (node.getType()) {
+            case OP:
+                if (node.getChildren().size() == 2) {
+                    sb.append("(");
+                    sb.append(toStringHelper(node.getChildren().get(0)));
+                    sb.append(" ").append(node.getValue()).append(" ");
+                    sb.append(toStringHelper(node.getChildren().get(1)));
+                    sb.append(")");
+                }
+                break;
+            case NOT:
+                sb.append(node.getValue());
+                if (!node.getChildren().isEmpty()) {
+                    sb.append(toStringHelper(node.getChildren().get(0)));
+                }
+                break;
+            case QOP:
+                sb.append(node.getValue()).append(" ");
+                sb.append(node.getChildren().get(0).getValue()).append(".");
+                sb.append("(");
+                sb.append(toStringHelper(node.getChildren().get(1)));
+                sb.append(")");
+                break;
+            case RELATION:
+            case EQUALS:
+                if (node.getChildren().size() >= 1) {
+                    sb.append(node.getValue()).append("(");
+                    List<String> childFormulas = new LinkedList<>();
+                    for (Node child : node.getChildren()) {
+                        childFormulas.add(toStringHelper(child));
+                    }
+                    sb.append(String.join(", ", childFormulas));
+                    sb.append(")");
+                }
+                break;
+            case VALUE:
+            case TERM:
+                sb.append(node.getValue());
+                break;
+            default:
+                sb.append(node.getValue());
+                break;
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Get the size of the AST
+     * @return the size of the AST
+     */
+    public int getSize() {// 返回 AST 叶节点的个数
+        return root == null ? 0 : getSizeHelper(root);
+    }
+
+    /**
+     * Helper method to get the size of the AST
+     * @param node the current node
+     * @return the size of the AST
+     */
+    private int getSizeHelper(Node node) {
+        assert node != null;
+        int size = 0;
+        if (node.getChildren().isEmpty()) {
+            return 1;
+        }
+        for (Node child : node.getChildren()) {
+            size += getSizeHelper(child);
+        }
+        return size;
     }
 }

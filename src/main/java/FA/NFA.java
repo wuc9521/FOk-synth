@@ -32,12 +32,4 @@ public abstract class NFA<SType, IType> {
      */
     public abstract Set<State<SType>> transition(State<SType> state, IType input); // transition from one state to
                                                                                    // another
-
-    /**
-     * intersect two automata
-     * 
-     * @param automaton the automaton to be intersected with
-     * @return the intersected automaton
-     */
-    public abstract NFA<SType, IType> intersect(NFA<SType, IType> automaton); // intersect two automata
 }

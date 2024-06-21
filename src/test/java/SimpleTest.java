@@ -177,4 +177,14 @@ public class SimpleTest {
             }
         }
     }
+
+    @Test
+    public void unionTest(){
+
+    }
+
+    @Test
+    public void ASTTest(){
+        
+    }
 }

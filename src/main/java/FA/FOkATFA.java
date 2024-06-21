@@ -186,8 +186,9 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      */
     @Override
     public Set<State<Assignment>> transition(State<Assignment> state, FormulaContext input) {
-        this.currentFormula = input; // 这里注意一定要更新当前的formula, 不然就会爆栈
-        // copy() 主要就是为了避免递归的过程中不停改变 this.currentStates
+        this.currentFormula = input; // don't forget to update the formula
+        // otherwise there would be **STACK OVERFLOW**
+        // copy() is just to avoid changing this.currentStates all the time
         try {
             if (this.currentFormula.NOT() != null) { // case 1: δ (γ, ¬) = (γ', 1)
                 this.lookingForTrueAssignment = !this.lookingForTrueAssignment; // flip the flag
@@ -266,17 +267,6 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     }
 
     /**
-     * intersect two automata
-     * 
-     * @param automaton
-     * @return the intersection of two automata
-     */
-    @Override
-    public NFA<Assignment, FormulaContext> intersect(NFA<Assignment, FormulaContext> other) {
-        return null;
-    }
-
-    /**
      * handle the operation in the formula
      * 
      * @param currentState the current state of the automaton
@@ -350,7 +340,8 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     private void shortCutTransition(FormulaContext input) throws Exception {
         for (int i = 0; i < this.subAutomata.size(); i++) {
             if (this.subAutomata.get(i).accepts(input.formula(i))) {
-                // 注意这里是很强的条件, 子自动机甚至都!接受!了.
+                // Note that this is a strong condition
+                // since we even allow the sub-automaton to **ACCEPT** the input
                 // 那么当前自动机就要进入到一个singleton中就可以了, 因为我们确保它可以接受.
                 this.currentStates = this.subAutomata.get(i).currentStates;
                 return;
@@ -473,7 +464,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         boolean isTrueUnderAssignment = false;
         Assignment assignment = ((TState) currentState).getAssignment();
         this.currentFormula = null; // this line is ESSNTIAL
-        if (input.RELATION() != null) { // 只要读到关系肯定要 return
+        if (input.RELATION() != null) { // as long as the relation is defined, the automaton should stop
             String relationName = input.RELATION().getText();
             boolean allVarsOfRelationDefined = true;
             for (int i = 0; i < input.term().size(); i++) {
@@ -488,15 +479,15 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
                                 .map(t -> this.structure.new Element(this.visitor.getTermVal(t, assignment)))
                                 .collect(Collectors.toList()));
             }
-            if (!allVarsOfRelationDefined) { // 这里是下策. 不应该有
+            if (!allVarsOfRelationDefined) {
                 isTrueUnderAssignment = false;
             }
             if (isTrueUnderAssignment == this.lookingForTrueAssignment) {
                 ((TState) currentState).setAccepting(true);
                 this.currentStates = Collections.singleton((TState) currentState);
             } else {
-                ((TState) currentState).setAccepting(false); // not accepting 表示拒绝
-                this.currentStates = Collections.emptySet(); // \emptyset 表示结束
+                ((TState) currentState).setAccepting(false); // not accepting means rejecting
+                this.currentStates = Collections.emptySet(); // \emptyset means ending the automaton
             }
             return;
         } else if (input.EQUALS() != null) {
@@ -519,7 +510,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      * @return the shortest formula that the automaton accepts
      */
     public String getShortestFormula(boolean isTrue) {
-        return this.getShortestFormula(isTrue, this.largestFormulaSize);
+        return this.getShortestFormula(isTrue, FOkATFA.largestFormulaSize);
     }
 
     /**
@@ -532,17 +523,21 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     public String getShortestFormula(boolean isTrue, int largestSize) {
         Queue<AST> queue = new LinkedList<>();
         FOkATFA<T> automaton = new FOkATFA<>(structure);
-        ASTGenerator generator = new ASTGenerator();
+        ASTBuilder astBuilder = new ASTBuilder();
         AST initialAst = new AST(); // Suppose AST has a default initial state that makes sense
         queue.add(initialAst); // Start with a minimal AST
 
+        // the tranversal of the ASTs is actually the Pushdown Automata of the FOk
+        // because we are always looking for the minimal AST that satisfies the automaton
         while (!queue.isEmpty()) {
             AST currentAst = queue.poll();
             if (currentAst.getSize() > largestSize) {
                 break; // Stop if the AST size exceeds the limit
             }
-            Set<AST> grownAsts = generator.grow(currentAst); // Method to get all possible single-step extensions of the
-                                                             // AST
+            Set<AST> grownAsts = new HashSet<>();
+            // Set<AST> grownAsts = astBuilder.grow(currentAst); 
+            // Method to get all possible single-step extensions of the
+                                                              // AST
             for (AST ast : grownAsts) {
                 String formulaString = ast.toString(); // Assume AST has a method to convert to string formula
                 ParseTree tree = ParserUtils.parse(formulaString);
