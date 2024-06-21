@@ -1,6 +1,7 @@
 package AST;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 
 import lombok.Getter;
@@ -28,6 +29,8 @@ public class ASTBuilder<T> {
         }
     };
 
+    private List<String> possibleTermLiterals = new LinkedList<>();
+
     public ASTBuilder() {
     }
 
@@ -37,6 +40,7 @@ public class ASTBuilder<T> {
         for (String var : vars) {
             this.vars.put(var, false);
         }
+        this.possibleTermLiterals = this.getAllPossibleTermLiterals();
     }
 
     public List<String> getAllPossibleTermLiterals() {
@@ -58,9 +62,9 @@ public class ASTBuilder<T> {
             return this.trivialASTs; // TODO: 要处理一下非叶节点.
         }
         HashSet<AST> result = new HashSet<>();
+
         for (AST givenAST : astSet) {
-            AST.Node node = givenAST.getRoot();
-            assert node.getType() == AST.FOk.FORMULA;
+            assert givenAST.getRoot().getType() == AST.FOk.FORMULA;
             for (AST.FOk type : AST.FOk.values()) {
                 result.addAll(growbyType(astSet, givenAST, type));
             }
@@ -88,53 +92,90 @@ public class ASTBuilder<T> {
      *         type
      */
     private Set<AST> growbyType(Set<AST> astSet, AST givenAST, AST.FOk type) {
-        assert givenAST.getRoot().getType() == AST.FOk.FORMULA; // 给定一个formula
+        if (type != AST.FOk.FORMULA && type != AST.FOk.NOT && type != AST.FOk.QOP && type != AST.FOk.RELATION
+                && type != AST.FOk.TERM && type != AST.FOk.VALUE && type != AST.FOk.LPAREN) {
+            return new HashSet<>();
+        }
         Set<AST> result = new HashSet<>();
-        List<String> possibleTermLiterals = this.getAllPossibleTermLiterals();
-        AST newAst = null;
+        assert givenAST.getRoot().getType() == AST.FOk.FORMULA; // 给定一个formula
+        AST resultAST = null;
         switch (type) {
             case NOT: // formula -> not (formula)
                 // 这种情况是绝对的
-                AST notAst = new AST(AST.FOk.FORMULA, "~");
-                newAst = new AST(AST.FOk.FORMULA, notAst.toString() + "(" + givenAST.toString() + ")");
-                newAst.setSize(givenAST.getSize() + 3);
-                newAst.getRoot().addChild(notAst.getRoot());
-                newAst.getRoot().addChild(givenAST.getRoot());
-                result.add(newAst);
+                // if current formula is trivial, then break;
+                if (givenAST.equals(new AST(AST.FOk.FORMULA, "$T"))
+                        || givenAST.equals(new AST(AST.FOk.FORMULA, "$F"))) {
+                    return result;
+                }
+                AST notAst = new AST(AST.FOk.NOT, "~");
+                resultAST = new AST(AST.FOk.FORMULA, notAst.toString() + "(" + givenAST.toString() + ")");
+                resultAST.setSize(givenAST.getSize() + 1);
+                resultAST.getRoot().addChild(notAst.getRoot());
+                resultAST.getRoot().addChild(givenAST.getRoot());
+                result.add(resultAST);
                 return result;
             case FORMULA:
+                if (givenAST.equals(new AST(AST.FOk.FORMULA, "$T"))
+                        || givenAST.equals(new AST(AST.FOk.FORMULA, "$F"))) {
+                    return result;
+                }
+                String[] ops = {
+                        // "<->", // TODO: 为了方便我们先不实现这两个
+                        // "->",
+                        "&",
+                        "|"
+                };
+                AST lAST = null;
+                AST rAST = null;
+                for (String op : ops) {
+                    AST.Node node = new AST.Node(AST.FOk.OP, op);
+                    for (AST otherAST : astSet) {
+                        if (otherAST.equals(givenAST) || otherAST.equals(new AST(AST.FOk.FORMULA, "$T"))
+                                || otherAST.equals(new AST(AST.FOk.FORMULA, "$F"))) {
+                            continue;
+                        }
+                        lAST = new AST(AST.FOk.FORMULA,
+                                "(" + otherAST.toString() + ")" + node.toString() + "(" + givenAST.toString() + ")");
+                        lAST.setSize(otherAST.getSize() + givenAST.getSize() + 1);
+                        lAST.getRoot().addChild(otherAST.getRoot());
+                        lAST.getRoot().addChild(node);
+                        lAST.getRoot().addChild(givenAST.getRoot());
+                        rAST = new AST(AST.FOk.FORMULA,
+                                "(" + givenAST.toString() + ")" + node.toString() + "(" + otherAST.toString() + ")");
+                        rAST.setSize(givenAST.getSize() + otherAST.getSize() + 1);
+                        rAST.getRoot().addChild(givenAST.getRoot());
+                        rAST.getRoot().addChild(node);
+                        rAST.getRoot().addChild(otherAST.getRoot());
+                        result.add(lAST);
+                        result.add(rAST);
+                    }
+                }
                 break;
             case QOP:
                 // add forall and exists
                 // consider var set now.
-                Set<String> vars = this.vars.keySet();   
+                // if (givenAST.equals(new AST(AST.FOk.FORMULA, "$T"))
+                // || givenAST.equals(new AST(AST.FOk.FORMULA, "$F"))) {
+                // return result;
+                // }
+                Set<String> vars = this.vars.keySet();
                 for (String var : vars) {
                     if (this.vars.get(var)) {
                         continue; // if the var has been used, skip
                     }
                     AST.Node node = new AST.Node(AST.FOk.QOP, "forall " + var + ".");
-                    newAst = new AST(AST.FOk.FORMULA, node.toString() + "(" + givenAST.toString() + ")");
-                    newAst.setSize(givenAST.getSize() + 7);
-                    newAst.getRoot().addChild(node);
-                    newAst.getRoot().addChild(givenAST.getRoot());
-                    result.add(newAst);
+                    resultAST = new AST(AST.FOk.FORMULA, node.toString() + "(" + givenAST.toString() + ")");
+                    resultAST.setSize(givenAST.getSize() + 7);
+                    resultAST.getRoot().addChild(node);
+                    resultAST.getRoot().addChild(givenAST.getRoot());
+                    result.add(resultAST);
                     node = new AST.Node(AST.FOk.QOP, "exists " + var + ".");
-                    newAst = new AST(AST.FOk.FORMULA, node.toString() + "(" + givenAST.toString() + ")");
-                    newAst.setSize(givenAST.getSize() + 7);
-                    newAst.getRoot().addChild(node);
-                    newAst.getRoot().addChild(givenAST.getRoot());
-                    result.add(newAst);
+                    resultAST = new AST(AST.FOk.FORMULA, node.toString() + "(" + givenAST.toString() + ")");
+                    resultAST.setSize(givenAST.getSize() + 7);
+                    resultAST.getRoot().addChild(node);
+                    resultAST.getRoot().addChild(givenAST.getRoot());
+                    result.add(resultAST);
                 }
-                return result;
-            case LPAREN:
-                AST lparenAst = new AST(AST.FOk.FORMULA, "(");
-                AST rparenAst = new AST(AST.FOk.FORMULA, ")");
-                newAst = new AST(AST.FOk.FORMULA, lparenAst.toString() + givenAST.toString() + rparenAst.toString());
-                newAst.setSize(givenAST.getSize() + 2);
-                newAst.getRoot().addChild(lparenAst.getRoot());
-                newAst.getRoot().addChild(givenAST.getRoot());
-                newAst.getRoot().addChild(rparenAst.getRoot());
-                result.add(newAst);
                 return result;
             case RELATION:
                 // add relation
@@ -145,31 +186,47 @@ public class ASTBuilder<T> {
                     List<List<String>> tuples = this.getTuplesFromPossibleTerms(arity);
                     for (List<String> tuple : tuples) {
                         AST.Node node = new AST.Node(AST.FOk.RELATION, relation + "(" + String.join(", ", tuple) + ")");
-                        newAst = new AST(AST.FOk.FORMULA, node.toString());
-                        newAst.setSize(1 + arity);
-                        newAst.getRoot().addChild(node);
-                        result.add(newAst);
+                        resultAST = new AST(AST.FOk.FORMULA, node.toString());
+                        resultAST.setSize(1 + arity);
+                        resultAST.getRoot().addChild(node);
+                        result.add(resultAST);
                     }
                 }
                 return result;
             case TERM:
                 // add term
                 Set<AST.Node> possibleTerms = new HashSet<>();
-                for (String term : possibleTermLiterals) {
+                for (String term : this.possibleTermLiterals) {
                     AST.Node node = new AST.Node(AST.FOk.TERM, term);
                     possibleTerms.add(node);
                 }
                 for (AST.Node t1 : possibleTerms) {
                     for (AST.Node t2 : possibleTerms) {
-                        AST.Node node = new AST.Node(AST.FOk.EQUALS, t1.toString() + " = " + t2.toString());
-                        newAst = new AST(AST.FOk.FORMULA, node.toString());
-                        newAst.setSize(3);
-                        newAst.getRoot().addChild(node);
-                        result.add(newAst);
+                        String equalsLiteral = "=";
+                        AST.Node node = new AST.Node(AST.FOk.FORMULA, t1.toString() + equalsLiteral + t2.toString());
+                        resultAST = new AST(AST.FOk.FORMULA, node.toString());
+                        resultAST.setSize(3);
+                        resultAST.getRoot().addChild(node);
+                        result.add(resultAST);
                     }
                 }
                 return result;
             case VALUE:
+            case LPAREN:
+                // if (givenAST.equals(new AST(AST.FOk.FORMULA, "$T"))
+                // || givenAST.equals(new AST(AST.FOk.FORMULA, "$F"))) {
+                // return result;
+                // }
+                // AST lparenAst = new AST(AST.FOk.FORMULA, "(");
+                // AST rparenAst = new AST(AST.FOk.FORMULA, ")");
+                // newAst = new AST(AST.FOk.FORMULA, lparenAst.toString() + givenAST.toString()
+                // + rparenAst.toString());
+                // newAst.setSize(givenAST.getSize() + 2);
+                // newAst.getRoot().addChild(lparenAst.getRoot());
+                // newAst.getRoot().addChild(givenAST.getRoot());
+                // newAst.getRoot().addChild(rparenAst.getRoot());
+                // result.add(newAst);
+                // return result;
             default:
                 break;
         }

@@ -251,6 +251,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             Pair<Token, TerminalNode> pair = bdVarTable.get(((TermContext) ctx).VARIABLE());
             if (pair == null) { // 说明该变量没有被赋值过, 不应该返回 null, 应该保持原样.
                 // DO NOTHING! Don't return null;
+                // yet I still return null 🤡
                 return null; // TODO: check here
             }
             TerminalNode var = tCtx.VARIABLE();
@@ -318,5 +319,15 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     public T getTermVal(TermContext ctx, Assignment assignment) {
         this.assignment = assignment;
         return calTermVal(ctx);
+    }
+
+    public FOkVisitor<T> copy(){
+        FOkVisitor<T> newVisitor = new FOkVisitor<>(this.structure);
+        newVisitor.assignment = this.assignment;
+        newVisitor.bdVarTable = new HashMap<>(this.bdVarTable);
+        newVisitor.allVarSet = new HashSet<>(this.allVarSet);
+        newVisitor.contexts = new ArrayList<>(this.contexts);
+        newVisitor.rootFormula = this.rootFormula;
+        return newVisitor;
     }
 }

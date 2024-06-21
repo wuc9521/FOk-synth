@@ -1,6 +1,5 @@
 package FA;
 
-import java.sql.Struct;
 import java.util.*;
 import lombok.*;
 import utils.*;
@@ -11,8 +10,6 @@ import FO.Structure;
 import AST.*;
 
 import java.util.stream.Collectors;
-
-import javax.swing.text.html.parser.Element;
 
 import org.antlr.v4.runtime.tree.*;
 
@@ -192,6 +189,9 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         this.currentFormula = input; // don't forget to update the formula
         // otherwise there would be **STACK OVERFLOW**
         // copy() is just to avoid changing this.currentStates all the time
+        if (this.currentFormula == null) {
+            return Collections.emptySet(); // TODO: check here
+        }
         try {
             if (this.currentFormula.NOT() != null) { // case 1: δ (γ, ¬) = (γ', 1)
                 this.lookingForTrueAssignment = !this.lookingForTrueAssignment; // flip the flag
@@ -214,6 +214,22 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
             e.printStackTrace();
         }
         return this.currentStates.stream().collect(Collectors.toSet());
+    }
+
+    /**
+     * the accept function is defined as Σ* -> {0, 1}
+     * 
+     * @param input the input string to be checked
+     * @return whether the automaton accepts the input
+     */
+    public boolean accepts(String input) {
+        try {
+            FOkVisitor<T> visitor = new FOkVisitor<>(this.structure);
+            return this.accepts(visitor);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /**
@@ -494,7 +510,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
             }
             return;
         } else if (input.EQUALS() != null) {
-            try{
+            try {
                 T t1 = this.visitor.getTermVal(input.term(0), assignment);
                 T t2 = this.visitor.getTermVal(input.term(1), assignment);
                 Structure<T>.Element e1 = t1 != null ? this.structure.new Element(t1) : this.structure.new Element();
@@ -537,16 +553,17 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         queue.add(initialAst); // Start with a minimal AST
 
         // the tranversal of the ASTs is actually the Pushdown Automata of the FOk
-        // because we are always looking for the minimal AST that satisfies the automaton
+        // because we are always looking for the minimal AST that satisfies the
+        // automaton
         while (!queue.isEmpty()) {
             AST currentAst = queue.poll();
             if (currentAst.getSize() > largestSize) {
                 break; // Stop if the AST size exceeds the limit
             }
             Set<AST> grownAsts = new HashSet<>();
-            // Set<AST> grownAsts = astBuilder.grow(currentAst); 
+            // Set<AST> grownAsts = astBuilder.grow(currentAst);
             // Method to get all possible single-step extensions of the
-                                                              // AST
+            // AST
             for (AST ast : grownAsts) {
                 String formulaString = ast.toString(); // Assume AST has a method to convert to string formula
                 ParseTree tree = ParserUtils.parse(formulaString);
@@ -581,4 +598,5 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         copy.lookingForTrueAssignment = this.lookingForTrueAssignment;
         return copy;
     }
+
 }

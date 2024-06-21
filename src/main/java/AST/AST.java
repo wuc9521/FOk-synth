@@ -54,6 +54,9 @@ public class AST {
                 break;
             case VALUE:
             case TERM:
+            case OP:
+            case NOT:
+            case RELATION:
                 root.addChild(node);
                 this.root = root;
                 break;
@@ -141,13 +144,11 @@ public class AST {
         StringBuilder sb = new StringBuilder();
         switch (node.getType()) {
             case OP:
-                if (node.getChildren().size() == 2) {
-                    sb.append("(");
-                    sb.append(toStringHelper(node.getChildren().get(0)));
-                    sb.append(" ").append(node.getValue()).append(" ");
-                    sb.append(toStringHelper(node.getChildren().get(1)));
-                    sb.append(")");
-                }
+                sb.append("(");
+                sb.append(toStringHelper(node.getChildren().get(0)));
+                sb.append(" ").append(node.getChildren().get(1)).append(" ");
+                sb.append(toStringHelper(node.getChildren().get(2)));
+                sb.append(")");
                 break;
             case NOT:
                 sb.append(node.getValue());

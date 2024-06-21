@@ -37,7 +37,8 @@ antlr: lib/$(ANTLR4_JAR) $(PFILE) $(LFILE)
 
 compile: antlr
 	mkdir -p $(OUT)
-	javac -cp $(CP):$(MAIN) -d $(OUT) $(MAIN)/Main.java
+	javac -cp $(CP) -d $(OUT) $(MAIN)/*.java $(MAIN)/AST/*.java $(MAIN)/FA/*.java $(MAIN)/FO/*.java $(MAIN)/antlr/*.java $(MAIN)/structures/*.java $(MAIN)/utils/*.java $(MAIN)/visitors/*.java
+	javac -cp $(CP):$(OUT) -d $(OUT) $(TEST)/*.java
 
 run: compile
 	@echo ""
@@ -50,7 +51,9 @@ test: compile
 	@echo "Running tests..."
 	@mkdir -p $(OUT)
 	@javac -cp $(CP) -d $(OUT) $(TEST)/SimpleTest.java 
-	@java -cp $(CP) org.junit.runner.JUnitCore SimpleTest
+	@javac -cp $(CP) -d $(OUT) $(TEST)/FunctionTest.java 
+	# @java -cp $(CP) org.junit.runner.JUnitCore SimpleTest
+	@java -cp $(CP) org.junit.runner.JUnitCore FunctionTest
 	@echo "Done."
 
 wc: 
