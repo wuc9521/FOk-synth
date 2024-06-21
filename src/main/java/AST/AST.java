@@ -1,18 +1,19 @@
 package AST;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.LinkedList;
 import java.util.List;
-import antlr.*;
 
 /**
  * Helper class for representing and manipulating Abstract Syntax Trees (AST)
  * for first-order logic formulas.
  */
 @Getter
+@Setter
 public class AST {
-    public enum FOk {
+    public static enum FOk {
         OP, // 逻辑运算符
         QOP, // 量词
         EQUALS, RELATION, // relation: R(x, y), E(x, y)
@@ -22,7 +23,15 @@ public class AST {
         NOT,
         LPAREN,
         RPAREN,
-        COMMA,
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof AST) {
+            AST ast = (AST) obj;
+            return this.toString().equals(ast.toString());
+        }
+        return false;
     }
 
     private int size; // The size of the AST
@@ -37,7 +46,21 @@ public class AST {
     }
 
     public AST(FOk type, String value) {
-        this.root = new Node(type, value);
+        Node node = new Node(type, value);
+        Node root = new Node(FOk.FORMULA, node.toString());
+        switch (type) {
+            case FORMULA:
+                this.root = node;
+                break;
+            case VALUE:
+            case TERM:
+                root.addChild(node);
+                this.root = root;
+                break;
+            default:
+                break;
+
+        }
     }
 
     public AST(AST ast) {
@@ -59,8 +82,12 @@ public class AST {
         }
     }
 
+    public AST getAST() {
+        return this;
+    }
+
     @Getter
-    public class Node {
+    public static class Node {
         private FOk type;
         private String value;
         private Node parent;
@@ -80,20 +107,33 @@ public class AST {
             this.parent = parent;
         }
 
+        public String toString() {
+            return this.value;
+        }
     }
 
     /**
      * Convert the AST to a string (as a formula)
+     * 
+     * @return the string representation of the AST
      */
     public String toString() {
-        if (root == null) {
-            return "";
-        }
-        return toStringHelper(root).trim();
+        return this.toString(this.root);
+    }
+
+    /**
+     * Convert the AST to a string (as a formula)
+     * 
+     * @param node the root of the AST
+     * @return the string representation of the AST
+     */
+    public String toString(Node node) {
+        return this.toStringHelper(node).trim();
     }
 
     /**
      * Helper method to convert the AST to a string
+     * 
      * @param node the current node
      * @return the string representation of the AST with the given node as the root
      */
@@ -147,6 +187,7 @@ public class AST {
 
     /**
      * Get the size of the AST
+     * 
      * @return the size of the AST
      */
     public int getSize() {// 返回 AST 叶节点的个数
@@ -155,6 +196,7 @@ public class AST {
 
     /**
      * Helper method to get the size of the AST
+     * 
      * @param node the current node
      * @return the size of the AST
      */

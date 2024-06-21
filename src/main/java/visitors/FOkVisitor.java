@@ -14,7 +14,6 @@ import java.util.*;
 import utils.*;
 import java.util.stream.Collectors;
 
-
 import org.antlr.v4.runtime.Token;
 
 public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
@@ -108,15 +107,17 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             RuleContext parent = ctx.getParent();
             // since variable can be reused, we consider the variable in the nearest
             // quantifier.
-            while (parent != null && (!(parent instanceof FormulaContext) || ((FormulaContext) parent).qop == null || !((FormulaContext) parent).VARIABLE().getText().equals(ctx.VARIABLE().getText()))) {
+            while (parent != null && (!(parent instanceof FormulaContext) || ((FormulaContext) parent).qop == null
+                    || !((FormulaContext) parent).VARIABLE().getText().equals(ctx.VARIABLE().getText()))) {
                 // search up to the first bounded variable with the same name.
                 parent = parent.getParent();
             }
             FormulaContext fCtx = (FormulaContext) parent;
-            bdVarTable.put(
-                ctx.VARIABLE(), 
-                new Pair<>(fCtx.qop, fCtx.VARIABLE())
-            );
+            if (fCtx != null && fCtx.qop != null) {
+                bdVarTable.put(
+                        ctx.VARIABLE(),
+                        new Pair<>(fCtx.qop, fCtx.VARIABLE()));
+            } 
         }
         return visitChildren(ctx);
     }
@@ -159,9 +160,9 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
                 case FOkLexer.IMPLIES:
                     return !left || right;
                 case FOkLexer.AND:
-                    // if we use calFormulaVal instead of the variable, 
+                    // if we use calFormulaVal instead of the variable,
                     // the Java compiler will automatically perform short-circuit evaluation.
-                    return left && right;   
+                    return left && right;
                 case FOkLexer.OR:
                     return left || right;
                 default:
@@ -170,11 +171,15 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
         } else if (fCtx.qop != null) { // case 3
             switch (fCtx.qop.getType()) {
                 case FOkParser.FORALL:
-                    if(this.assignment != null){
-                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()).getValue());
-                        return calFormulaVal(fCtx.formula(0)); // TODO: currently we don't support the reuse of the variables.
-                    } else{ // if there is no assignment, just consider all the cases.
-                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
+                    if (this.assignment != null) {
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() +
+                        // " is assigned to " +
+                        // this.assignment.getKvMap().get(fCtx.VARIABLE().getText()).getValue());
+                        return calFormulaVal(fCtx.formula(0)); // TODO: currently we don't support the reuse of the
+                                                               // variables.
+                    } else { // if there is no assignment, just consider all the cases.
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() +
+                        // " is not assigned.");
                         boolean res = true;
                         Assignment newAssignment = new Assignment(new HashMap<>(this.assignment.getKvMap()));
                         for (Structure<T>.Element ele : this.structure.domain) {
@@ -185,10 +190,13 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
                     }
                 case FOkParser.EXISTS:
                     if (this.assignment != null) {
-                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is assigned to " + this.assignment.getKvMap().get(fCtx.VARIABLE().getText()).getValue());
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() +
+                        // " is assigned to " +
+                        // this.assignment.getKvMap().get(fCtx.VARIABLE().getText()).getValue());
                         return calFormulaVal(fCtx.formula(0));
                     } else { // if there is no assignment, just consider all the cases.
-                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() + " is not assigned.");
+                        // System.out.println("[INFO]: bounded variable: " + fCtx.VARIABLE().getText() +
+                        // " is not assigned.");
                         boolean res = false;
                         Assignment newAssignment = new Assignment(new HashMap<>(this.assignment.getKvMap()));
                         for (Structure<T>.Element ele : this.structure.domain) {
@@ -202,12 +210,19 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             }
         } else if (ctx.getChild(0) == fCtx.RELATION()) { // case 4: checked
             List<Structure<T>.Element> args = fCtx.term().stream().map(t -> {
-                return this.structure.new Element(calTermVal(t));
+                T termVal = calTermVal(t);
+                if (termVal != null) {
+                    return this.structure.new Element(termVal);
+                }
+                return this.structure.new Element();
             }).collect(Collectors.toList());
             return this.structure.relations
                     .get(fCtx.RELATION().getText())
                     .holds(args);
         } else if (ctx.getChild(0) == fCtx.term()) { // case 5: checked
+            if (calTermVal(fCtx.term(0)) == null || calTermVal(fCtx.term(1)) == null) {
+                return false;
+            }
             return calTermVal(fCtx.term(0)).equals(calTermVal(fCtx.term(1)));
         } else if (ctx.getChild(0) == fCtx.value()) { // case 6: checked
             return fCtx.value().TRUE() != null;
@@ -236,12 +251,13 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             Pair<Token, TerminalNode> pair = bdVarTable.get(((TermContext) ctx).VARIABLE());
             if (pair == null) { // 说明该变量没有被赋值过, 不应该返回 null, 应该保持原样.
                 // DO NOTHING! Don't return null;
+                return null; // TODO: check here
             }
             TerminalNode var = tCtx.VARIABLE();
             assert this.assignment.getKvMap().containsKey(var.getText());
-            if(this.assignment.getKvMap().get(var.getText()) == null) {
+            if (this.assignment.getKvMap().get(var.getText()) == null) {
                 return null;
-            } 
+            }
             return (T) this.assignment.getKvMap().get(var.getText()).getValue();
         } else if (ctx.getChild(0) == ((TermContext) ctx).CONST()) { // case 3: checked
             // get the value of the const
@@ -253,6 +269,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
 
     /**
      * This method is used to get the value of the formula (T or F)
+     * 
      * @return The value of the formula (T or F)
      */
     public boolean getFormulaVal() {
@@ -265,6 +282,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     /**
      * This method is used to get the value of the formula (T or F)
      * under given assignment.
+     * 
      * @param assignment The assignment of the variables.
      * @return The value of the formula (T or F)
      */
@@ -275,7 +293,8 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
 
     /**
      * This method is used to get the value of the formula (T or F)
-     * @param ctx The context of the formula.
+     * 
+     * @param ctx        The context of the formula.
      * @param assignment The assignment of the variables.
      * @return The value of the formula (T or F)
      */
@@ -290,7 +309,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     public HashMap<TerminalNode, Pair<Token, TerminalNode>> getBdVarTable() {
         tree.accept(this);
         return bdVarTable;
-    }   
+    }
 
     /**
      * @param ctx The context of the formula.

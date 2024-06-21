@@ -13,6 +13,13 @@ public class TupleGenerator {
         return results;
     }
 
+    public static <T> List<List<T>> generateKTuplesWithoutNull(int k, List<T> values) {
+        List<List<T>> results = new ArrayList<>();
+        List<T> extendedValues = new ArrayList<>(values);
+        generateKTuplesHelper(k, extendedValues, new ArrayList<>(), results);
+        return results;
+    }
+
     public static <T> List<List<T>> generateCartesian(List<List<T>> lists) {
         List<List<T>> results = new ArrayList<>();
         generateCartesianHelper(lists, 0, new ArrayList<>(), results);

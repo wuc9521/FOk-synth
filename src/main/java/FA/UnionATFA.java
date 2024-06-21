@@ -102,7 +102,6 @@ public class UnionATFA<T> {
         // return result;
         return null;
     }
-    // TODO: 首先实现 AST 部分.
     // TODO: 首先实现给 FOkATFA 套壳之后也能跑
     // TODO: 然后实现多个自动机的交 (直接另所有的都满足就可以了)
     // TODO: 生成最小 formula 这件事也可以用list模拟, 细品一下. 毕竟笛卡尔积确实也还要一个个比较.

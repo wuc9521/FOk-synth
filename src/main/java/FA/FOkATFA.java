@@ -1,5 +1,6 @@
 package FA;
 
+import java.sql.Struct;
 import java.util.*;
 import lombok.*;
 import utils.*;
@@ -10,6 +11,8 @@ import FO.Structure;
 import AST.*;
 
 import java.util.stream.Collectors;
+
+import javax.swing.text.html.parser.Element;
 
 import org.antlr.v4.runtime.tree.*;
 
@@ -491,9 +494,15 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
             }
             return;
         } else if (input.EQUALS() != null) {
-            isTrueUnderAssignment = this.structure.new Element(
-                    this.visitor.getTermVal(input.term(0), assignment))
-                    .equals(this.structure.new Element(this.visitor.getTermVal(input.term(1), assignment)));
+            try{
+                T t1 = this.visitor.getTermVal(input.term(0), assignment);
+                T t2 = this.visitor.getTermVal(input.term(1), assignment);
+                Structure<T>.Element e1 = t1 != null ? this.structure.new Element(t1) : this.structure.new Element();
+                Structure<T>.Element e2 = t2 != null ? this.structure.new Element(t2) : this.structure.new Element();
+                isTrueUnderAssignment = e1.equals(e2);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
         } else if (input.value() != null) {
             isTrueUnderAssignment = input.value().getText().equals(DataUtils.TRUE);
         }
@@ -523,7 +532,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     public String getShortestFormula(boolean isTrue, int largestSize) {
         Queue<AST> queue = new LinkedList<>();
         FOkATFA<T> automaton = new FOkATFA<>(structure);
-        ASTBuilder astBuilder = new ASTBuilder();
+        ASTBuilder<T> astBuilder = new ASTBuilder<>();
         AST initialAst = new AST(); // Suppose AST has a default initial state that makes sense
         queue.add(initialAst); // Start with a minimal AST
 

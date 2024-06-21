@@ -2,9 +2,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
-import java.util.Scanner;
-
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import antlr.*;
@@ -18,6 +15,8 @@ import visitors.TransitionVisitor;
 import utils.Colors;
 import antlr.FOkParser.FormulaContext;
 import utils.*;
+import AST.*;
+
 
 public class SimpleTest {
     @Test
@@ -112,6 +111,8 @@ public class SimpleTest {
 
     @Test
     public void automataAcceptsTest() {
+        GraphStructure gs1 = new GraphStructure(true);
+        GraphStructure gs2 = new GraphStructure(false);
         String[] input = {
                 "~(forall x . (~(E(#1, x)) | (exists y . ( E(x, y) & E(y, #2)))))",
                 "forall x . ( ~(E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))",
@@ -126,8 +127,6 @@ public class SimpleTest {
                 { false, true, false, true, false, true, true }
         };
 
-        GraphStructure gs1 = new GraphStructure(true);
-        GraphStructure gs2 = new GraphStructure(false);
         for (int i = 0; i < 8; i++) {
             gs1.addVertex(i);
             gs2.addVertex(i);
@@ -178,13 +177,49 @@ public class SimpleTest {
         }
     }
 
-    @Test
-    public void unionTest(){
+    // @Test
+    // public void unionTest(){
 
-    }
+    // }
 
     @Test
     public void ASTTest(){
-        
+        GraphStructure gs = new GraphStructure(true);
+        for (int i = 0; i < 8; i++) {
+            gs.addVertex(i);
+        }
+        gs.constants.put("#1", 7);
+        gs.constants.put("#2", 0);
+        gs.constants.put("#3", 1);
+        gs.constants.put("#4", 6);
+        int[][] edges = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
+                { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
+        for (int[] edge : edges) {
+            Vertex v1 = gs.new Vertex(edge[0]);
+            Vertex v2 = gs.new Vertex(edge[1]);
+            GraphStructure.Edge dEdge = gs.new Edge(v1, v2);
+            ((GraphStructure.E) gs.relations.get("E")).addEdge(dEdge);
+        }
+        ArrayList vars = new ArrayList<String>() {
+            {
+                add("x");
+                add("y");
+            }
+        }; // the list of variables
+        FOkVisitor visitor = new FOkVisitor(gs);
+        ASTBuilder builder = new ASTBuilder(gs, vars);
+        Set<AST> asts = new HashSet<>();
+        asts = builder.grow(asts);
+        asts = builder.grow(asts);
+        asts = builder.grow(asts);
+        for (AST ast : asts) {
+            try {
+                String input = ast.toString();
+                visitor.visit(ParserUtils.parse(input));
+                System.out.println("ATFA" + (new FOkATFA(vars, gs).accepts(visitor) ? " accepts" : " rejects") + " the formula: " + input);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
