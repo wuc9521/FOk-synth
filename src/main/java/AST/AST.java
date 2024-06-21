@@ -12,6 +12,7 @@ import java.util.List;
  */
 @Getter
 public class AST {
+    // TODO: CFG 的构建要考虑 Pushdown Automata ?
     public enum FOk {
         PROG, SENTENCE, FORMULA, TERM, VALUE, RELATION, EQUALS, NOT, IFF, IMPLIES, AND, OR, FORALL, EXISTS, VARIABLE,
         DOT, LPAREN, RPAREN, COMMA

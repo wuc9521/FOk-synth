@@ -42,6 +42,10 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
     @Override
     public Void visit(ParseTree tree) {
         this.tree = tree;
+        this.allVarSet.clear();
+        this.contexts.clear();
+        this.bdVarTable.clear();
+        this.rootFormula = null;
         return tree.accept(this);
     }
 

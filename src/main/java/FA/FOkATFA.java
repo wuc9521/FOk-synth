@@ -20,7 +20,7 @@ import antlr.FOkParser.FormulaContext;
  */
 @Getter
 public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
-    private final int largestFormulaSize = 30;
+    private static final int largestFormulaSize = 30;
     protected Set<TState> states = new HashSet<>(); // the set of states of the automaton
 
     @Setter
@@ -32,6 +32,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     protected List<FOkATFA<T>> subAutomata = new LinkedList<>(); // the set of sub-automata
     protected FormulaContext currentFormula; // the current formula to be processed
     protected boolean lookingForTrueAssignment = true; // whether the automaton is looking for a true assignment
+    protected List<String> vars = new ArrayList<>(); // the list of variables that can be used to construct the states
 
     protected enum mode {
         INTERSECT, UNION
@@ -56,24 +57,29 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      */
     public FOkATFA(List<String> vars, Structure<T> structure) {
         this.structure = structure;
+        this.vars = vars;
         this.visitor = new FOkVisitor<>(structure);
         this.lookingForTrueAssignment = structure.pos;
+        this.generateStates();
         // initialize all the states by invoking the generateTuple method
+    }
+
+    private void generateStates() {
         TupleGenerator.generateKTuples(vars.size(), new ArrayList<>(structure.domain)).forEach(tuple -> { // tuple:
-                                                                                                          // List<Element>
+            // List<Element>
             Map<String, Structure<?>.Element> kvMap = new HashMap<>();
             // HashMap<String, Structure<?>.Element> kvMap = new HashMap<>();
             for (int i = 0; i < vars.size(); i++) {
                 if (tuple.get(i) != null) {
                     kvMap.put(vars.get(i), (Structure<T>.Element) tuple.get(i));
                 } else {// key = var, value = new Element(), by default a new element without input is
-                        // undefined
+                    // undefined
                     kvMap.put(vars.get(i), structure.new Element());
                 }
             }
             TState state = new TState(new Assignment(kvMap));
             if (kvMap.values().stream().allMatch(e -> e.isUndefined())) { // if all the variables are undefined, then it
-                                                                          // is the initial state
+                // is the initial state
                 this.initialState = state;
             }
             this.states.add(state);
@@ -216,6 +222,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
     public boolean accepts(FOkVisitor<T> visitor) throws Exception {
         // make sure that the visitor has visited the parse tree
         this.visitor = visitor;
+        assert visitor.getRootFormula() != null;
         return this.accepts(visitor.getRootFormula());
     }
 
@@ -360,7 +367,9 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      */
     private List<TState> getSimilarStates(String var) {
         List<TState> similarStates = this.states.stream().filter(
-                s -> this.currentStates.stream().anyMatch(s_ -> s_.equalsExceptVar(s, var)))
+                s -> this.currentStates.stream().anyMatch(
+                        s_ -> s_.equalsExceptVar(s, var)
+                                && !s.getAssignment().getKvMap().get(var).isUndefined()))
                 .collect(Collectors.toList());
         return similarStates;
     }
@@ -390,19 +399,23 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
             switch (input.qop.getType()) {
                 case FOkParser.FORALL:
                     this.concurrentTransition(similarStates, input.formula(0));
+                    return;
                 case FOkParser.EXISTS: // make use of short-circuiting
                     this.shortCutTransition(similarStates, input.formula(0));
+                    return;
                 default:
-                    break;
+                    return;
             }
         } else { // the automaton is looking for a false assignment
             switch (input.qop.getType()) {
                 case FOkParser.FORALL:
                     this.shortCutTransition(similarStates, input.formula(0));
+                    return;
                 case FOkParser.EXISTS:
                     this.concurrentTransition(similarStates, input.formula(0));
+                    return;
                 default:
-                    break;
+                    return;
             }
         }
     }
@@ -419,11 +432,10 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         for (int i = 0; i < this.subAutomata.size(); i++) {
             subAutomata.get(i).currentFormula = input;
             if (!this.subAutomata.get(i).accepts(input)) {
-                // System.out.println(input.getText() + " is not accepted by the automaton " + i + "("
-                //         + this.subAutomata.get(i).lookingForTrueAssignment + ")");
                 this.currentStates = Collections.emptySet();
                 return;
-            }
+            } // if one of the sub-automata fails to accept the input, then the automaton
+              // fails to accept
         }
         this.currentStates = domainStates.stream().collect(Collectors.toSet());
     }
@@ -477,11 +489,6 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
                                 .collect(Collectors.toList()));
             }
             if (!allVarsOfRelationDefined) { // 这里是下策. 不应该有
-                // for (int i = 0; i < input.term().size(); i++) {
-                // System.out.print(this.visitor.getTermVal(input.term(i), assignment) + " ");
-                // }
-                // System.out.println("not all vars of relation " + relationName + " are
-                // defined");
                 isTrueUnderAssignment = false;
             }
             if (isTrueUnderAssignment == this.lookingForTrueAssignment) {
@@ -491,18 +498,13 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
                 ((TState) currentState).setAccepting(false); // not accepting 表示拒绝
                 this.currentStates = Collections.emptySet(); // \emptyset 表示结束
             }
-            // System.out.print("looking for " + this.lookingForTrueAssignment + "
-            // assignment, " + relationName
-            // + " is " + isTrueUnderAssignment + " under assingment ");
-            // this.printCurrentStates();
-            // System.out.println();
             return;
         } else if (input.EQUALS() != null) {
             isTrueUnderAssignment = this.structure.new Element(
                     this.visitor.getTermVal(input.term(0), assignment))
                     .equals(this.structure.new Element(this.visitor.getTermVal(input.term(1), assignment)));
         } else if (input.value() != null) {
-            isTrueUnderAssignment = input.value().getText().equals(DataUtil.TRUE);
+            isTrueUnderAssignment = input.value().getText().equals(DataUtils.TRUE);
         }
         // if the formula is what it should be under the assignment of the state,
         if (isTrueUnderAssignment == this.lookingForTrueAssignment) {

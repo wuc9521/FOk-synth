@@ -11,11 +11,10 @@ public class ParserUtils {
     /**
      * Helper method to parse a formula string into a ParseTree
      * 
-     * @param formulaString formula in string form
+     * @param formula formula in string form
      * @return the ParseTree of the formula
      */
-    public static ParseTree parse(String formulaString) {
-        FOkParser parser = new FOkParser(new CommonTokenStream(new FOkLexer(CharStreams.fromString(formulaString))));
-        return parser.formula();
+    public static ParseTree parse(String formula) {
+        return new FOkParser(new CommonTokenStream(new FOkLexer(CharStreams.fromString(formula)))).formula();
     }
 }

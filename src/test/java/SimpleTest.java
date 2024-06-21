@@ -17,7 +17,7 @@ import visitors.FOkVisitor;
 import visitors.TransitionVisitor;
 import utils.Colors;
 import antlr.FOkParser.FormulaContext;
-
+import utils.*;
 
 public class SimpleTest {
     @Test
@@ -43,7 +43,7 @@ public class SimpleTest {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FOkParser parser = new FOkParser(tokens);
         ParseTree tree = parser.formula();
-        
+
         GraphStructure graphSturcture = new GraphStructure(true);
         for (int i = 0; i < 8; i++) {
             graphSturcture.addVertex(i);
@@ -59,14 +59,13 @@ public class SimpleTest {
             ((GraphStructure.E) graphSturcture.relations.get("E")).addEdge(dEdge);
         }
         FOkATFA automaton = new FOkATFA(
-            new ArrayList<String>() {
-                {
-                    add("x");
-                    add("y");
-                }
-            }, // the list of variables
-            graphSturcture
-        );
+                new ArrayList<String>() {
+                    {
+                        add("x");
+                        add("y");
+                    }
+                }, // the list of variables
+                graphSturcture);
         FOkVisitor visitor = new FOkVisitor(graphSturcture);
         visitor.visit(tree);
         // x = 4, y = 2 should reject
@@ -113,19 +112,20 @@ public class SimpleTest {
 
     @Test
     public void automataAcceptsTest() {
-        // String input = "~(forall x . ( ( ~ E(#1, x)) | (exists y . ( E(x, y) & E(y, #2)))))";
-        String input = "forall x . ( ~(E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))";
-        // String input = "E(#1, #4)"; // E(7, 6)
-        // String input = "~ (E(#1, #4))"; // E(7, 6)
-        // String input = "~(exists x . (E(x, #4)))"; // ~E(x, 6)
-        // String input = "exists x . (E(x, #4))"; // E(x, 6)
-        // String input = "$F"; 
-        CharStream charStream = CharStreams.fromString(input);
-        FOkLexer lexer = new FOkLexer(charStream);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        FOkParser parser = new FOkParser(tokens);
-        ParseTree tree = parser.formula();
-        
+        String[] input = {
+                "~(forall x . (~(E(#1, x)) | (exists y . ( E(x, y) & E(y, #2)))))",
+                "forall x . ( ~(E(#1, x)) | (exists y . ( E(x, y) & E(y, #2))))",
+                "E(#1, #4)", // E(7, 6)
+                "~(exists x . (E(x, #4)))", // ~E(x, 6)
+                "exists x . (E(x, #4))", // E(x, 6)
+                "forall x . (E(x, #4))", // E(x, 6)
+                "$F"
+        };
+        boolean[][] expected = {
+                { false, true, false, true, false, false, false },
+                { false, true, false, true, false, true, true }
+        };
+
         GraphStructure gs1 = new GraphStructure(true);
         GraphStructure gs2 = new GraphStructure(false);
         for (int i = 0; i < 8; i++) {
@@ -144,7 +144,7 @@ public class SimpleTest {
         int[][] edges1 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
                 { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 } };
         int[][] edges2 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 1, 4 }, { 1, 5 }, { 4, 1 },
-                { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 }, {7, 6}, {6, 7}};
+                { 5, 1 }, { 4, 7 }, { 5, 7 }, { 7, 4 }, { 7, 5 }, { 7, 6 }, { 6, 7 } };
         for (int[] edge : edges1) {
             Vertex v1 = gs1.new Vertex(edge[0]);
             Vertex v2 = gs1.new Vertex(edge[1]);
@@ -157,34 +157,24 @@ public class SimpleTest {
             GraphStructure.Edge dEdge = gs2.new Edge(v1, v2);
             ((GraphStructure.E) gs2.relations.get("E")).addEdge(dEdge);
         }
-        FOkATFA automaton1 = new FOkATFA(
-            new ArrayList<String>() {
-                {
-                    add("x");
-                    add("y");
-                }
-            }, // the list of variables
-            gs1
-        );
-        FOkATFA automaton2 = new FOkATFA(
-            new ArrayList<String>() {
-                {
-                    add("x");
-                    add("y");
-                }
-            }, // the list of variables
-            gs2
-        );
+        ArrayList vars = new ArrayList<String>() {
+            {
+                add("x");
+                add("y");
+            }
+        }; // the list of variables
         FOkVisitor visitor1 = new FOkVisitor(gs1);
-        visitor1.visit(tree);
         FOkVisitor visitor2 = new FOkVisitor(gs2);
-        visitor2.visit(tree);
-        System.out.println("");
-        try {
-            System.out.println("The automaton 1 " + (automaton1.accepts(visitor1) ? "accepts" : "rejects") + " the formula");
-            System.out.println("The automaton 2 " + (automaton2.accepts(visitor2) ? "accepts" : "rejects") + " the formula");
-        } catch (Exception e) {
-            e.printStackTrace();
+        for (int i = 0; i < input.length; i++) {
+            try {
+                // automaton2 = new FOkATFA(vars, gs2);
+                visitor1.visit(ParserUtils.parse(input[i]));
+                visitor2.visit(ParserUtils.parse(input[i]));
+                assertEquals(new FOkATFA(vars, gs1).accepts(visitor1), expected[0][i]);
+                assertEquals(new FOkATFA(vars, gs2).accepts(visitor2), expected[1][i]);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
