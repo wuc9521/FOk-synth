@@ -4,13 +4,13 @@ import java.util.*;
 
 
 public class UnionATFA<T> {
-    List<FOkATFA<T>> automata;
+    List<FOkATNFA<T>> automata;
 
     /**
      * the constructor of the UnionATFA
      * @param automata the list of automata to be unioned
      */
-    public UnionATFA(List<FOkATFA<T>> automata) {
+    public UnionATFA(List<FOkATNFA<T>> automata) {
         this.automata = automata;
     }
 
@@ -20,7 +20,7 @@ public class UnionATFA<T> {
      * @return
      */
     public boolean accepts(String input){
-        for (FOkATFA<T> automaton : this.automata) {
+        for (FOkATNFA<T> automaton : this.automata) {
             if (!automaton.accepts(input)) {
                 return false;
             }

@@ -58,10 +58,10 @@ public class FunctionTest {
     //     }; // the list of variables
     //     FOkVisitor visitor1 = new FOkVisitor(gs1);
     //     FOkVisitor visitor2 = new FOkVisitor(gs2);
-    //     ArrayList AFTAList = new ArrayList<FOkATFA<GraphStructure>>() {
+    //     ArrayList AFTAList = new ArrayList<FOkATNFA<GraphStructure>>() {
     //         {
-    //             add(new FOkATFA(vars, gs1));
-    //             add(new FOkATFA(vars, gs2));
+    //             add(new FOkATNFA(vars, gs1));
+    //             add(new FOkATNFA(vars, gs2));
     //         }
     //     };
     //     UnionATFA union = new UnionATFA(AFTAList);
@@ -138,14 +138,14 @@ public class FunctionTest {
         FOkVisitor visitor2 = new FOkVisitor(gs2);
         for (int i = 0; i < input.length; i++) {
             try {
-                // automaton2 = new FOkATFA(vars, gs2);
+                // automaton2 = new FOkATNFA(vars, gs2);
                 visitor1.visit(ParserUtils.parse(input[i]));
                 visitor2.visit(ParserUtils.parse(input[i]));
-                assertEquals(new FOkATFA(vars, gs1).accepts(visitor1), expected[0][i]);
-                System.out.println("ATFA 1" + (new FOkATFA(vars, gs1).accepts(visitor1) ? " accepts" : " rejects")
+                assertEquals(new FOkATNFA(vars, gs1).accepts(visitor1), expected[0][i]);
+                System.out.println("ATFA 1" + (new FOkATNFA(vars, gs1).accepts(visitor1) ? " accepts" : " rejects")
                         + " the formula: " + input[i]);
-                assertEquals(new FOkATFA(vars, gs2).accepts(visitor2), expected[1][i]);
-                System.out.println("ATFA 2" + (new FOkATFA(vars, gs2).accepts(visitor2) ? " accepts" : " rejects")
+                assertEquals(new FOkATNFA(vars, gs2).accepts(visitor2), expected[1][i]);
+                System.out.println("ATFA 2" + (new FOkATNFA(vars, gs2).accepts(visitor2) ? " accepts" : " rejects")
                         + " the formula: " + input[i]);
             } catch (Exception e) {
                 e.printStackTrace();

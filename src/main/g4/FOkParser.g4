@@ -12,7 +12,7 @@ sentence: formula; // technically a sentence should be a formula without any fre
 formula 
     : NOT formula                      
     | formula op=(IFF | IMPLIES | AND | OR) formula 
-    | qop=(FORALL | EXISTS) VARIABLE DOT LPAREN formula RPAREN 
+    | qop=(FORALL | EXISTS) VARIABLE DOT LPAREN formula RPAREN
     | RELATION (LPAREN term (COMMA term)* RPAREN)?
     | term EQUALS term        
     | value                    

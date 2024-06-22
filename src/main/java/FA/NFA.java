@@ -1,7 +1,8 @@
 package FA;
 
+import java.util.Set;
+
 import lombok.*;
-import java.util.*;
 
 /**
  * This is an interface that represents an automaton in first-order logic.
@@ -9,21 +10,11 @@ import java.util.*;
  */
 @Getter
 @Setter
-public abstract class NFA<SType, IType> {
-    public interface State<SType> {
-        public boolean isAccepting(); // check if the state is accepting
-    }
-
-    /**
-     * @param input the input to be checked
-     * @return whether the automaton accepts the input
-     */
-    public abstract boolean accepts(IType input) throws Exception; // check if the automaton accepts the input
-
+public abstract class NFA<SType, IType> extends FA<SType, IType> {
     /**
      * determinize the NFA to a DFA
      */
-    public abstract void determinize(); // determinize the automaton
+    public abstract DFA<SType, IType> determinize(); // determinize the automaton
 
     /**
      * @param state the state to transition from

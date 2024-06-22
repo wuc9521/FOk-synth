@@ -19,7 +19,7 @@ import antlr.FOkParser.FormulaContext;
  * Alternating Tree Automata for the FO(k) logic
  */
 @Getter
-public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
+public class FOkATNFA<T> extends NFA<Assignment, FormulaContext> {
     private static final int largestFormulaSize = 30;
     protected Set<TState> states = new HashSet<>(); // the set of states of the automaton
 
@@ -29,7 +29,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
                                                            // automaton
     protected FOkVisitor<T> visitor; // the visitor to visit the parse tree
     protected Structure<T> structure; // the structure for the automaton to run on
-    protected List<FOkATFA<T>> subAutomata = new LinkedList<>(); // the set of sub-automata
+    protected List<FOkATNFA<T>> subAutomata = new LinkedList<>(); // the set of sub-automata
     protected FormulaContext currentFormula; // the current formula to be processed
     protected boolean lookingForTrueAssignment = true; // whether the automaton is looking for a true assignment
     protected List<String> vars = new ArrayList<>(); // the list of variables that can be used to construct the states
@@ -43,7 +43,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      * 
      * @param structure the structure for the automaton to run on
      */
-    public FOkATFA(Structure<T> structure) {
+    public FOkATNFA(Structure<T> structure) {
         this(new ArrayList<>(), structure);
     }
 
@@ -55,7 +55,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      *                  observe that both the type of visitor and type of TFA are
      *                  dependent on the type of the structure
      */
-    public FOkATFA(List<String> vars, Structure<T> structure) {
+    public FOkATNFA(List<String> vars, Structure<T> structure) {
         this.structure = structure;
         this.vars = vars;
         this.visitor = new FOkVisitor<>(structure);
@@ -281,8 +281,8 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      * determinize the automaton
      */
     @Override
-    public void determinize() {
-
+    public FOkATDFA<T> determinize() {
+        return new FOkATDFA<>(this);
     }
 
     /**
@@ -300,7 +300,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         assert opNum == 2; // the operation should have two operands
         this.subAutomata.clear();
         for (int i = 0; i < opNum; i++) {
-            FOkATFA<T> automaton = this.copy();
+            FOkATNFA<T> automaton = this.copy();
             automaton.setInitialState((TState) currentState);
             this.subAutomata.add(automaton);
         }
@@ -401,7 +401,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
         // given variable
         this.subAutomata.clear();
         for (TState state : similarStates) {
-            FOkATFA<T> subAutomaton = this.copy();
+            FOkATNFA<T> subAutomaton = this.copy();
             subAutomaton.setInitialState(state);
             this.subAutomata.add(subAutomaton);
         }
@@ -535,7 +535,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      * @return the shortest formula that the automaton accepts
      */
     public String getShortestFormula(boolean isTrue) {
-        return this.getShortestFormula(isTrue, FOkATFA.largestFormulaSize);
+        return this.getShortestFormula(isTrue, FOkATNFA.largestFormulaSize);
     }
 
     /**
@@ -547,7 +547,7 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      */
     public String getShortestFormula(boolean isTrue, int largestSize) {
         Queue<AST> queue = new LinkedList<>();
-        FOkATFA<T> automaton = new FOkATFA<>(structure);
+        FOkATNFA<T> automaton = new FOkATNFA<>(structure);
         ASTBuilder<T> astBuilder = new ASTBuilder<>();
         AST initialAst = new AST(); // Suppose AST has a default initial state that makes sense
         queue.add(initialAst); // Start with a minimal AST
@@ -587,8 +587,8 @@ public class FOkATFA<T> extends NFA<Assignment, FormulaContext> {
      * 
      * @return the copied automaton
      */
-    public FOkATFA<T> copy() {
-        FOkATFA<T> copy = new FOkATFA<>(this.structure);
+    public FOkATNFA<T> copy() {
+        FOkATNFA<T> copy = new FOkATNFA<>(this.structure);
         copy.states.addAll(this.states);
         copy.initialState = this.initialState;
         copy.currentStates.addAll(this.currentStates);

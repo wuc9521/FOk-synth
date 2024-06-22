@@ -56,7 +56,7 @@ public class SimpleTest {
             GraphStructure.Edge dEdge = graphSturcture.new Edge(v1, v2);
             ((GraphStructure.E) graphSturcture.relations.get("E")).addEdge(dEdge);
         }
-        FOkATFA automaton = new FOkATFA(
+        FOkATNFA automaton = new FOkATNFA(
                 new ArrayList<String>() {
                     {
                         add("x");
@@ -69,11 +69,11 @@ public class SimpleTest {
         // x = 4, y = 2 should reject
         System.out.println("");
         automaton.getStates().stream().forEach(state -> {
-            boolean isAccepting = visitor.getFormulaVal(((FOkATFA.TState) state).getAssignment());
+            boolean isAccepting = visitor.getFormulaVal(((FOkATNFA.TState) state).getAssignment());
             String color = isAccepting ? Colors.GREEN : Colors.RED; // 设置颜色
             System.out.print(color); // 设置颜色
             System.out.print("{ ");
-            ((FOkATFA.TState) state).getAssignment().getKvMap().forEach((k, v) -> {
+            ((FOkATNFA.TState) state).getAssignment().getKvMap().forEach((k, v) -> {
                 System.out.print(k + " -> " + v.getValue() + " "); // 打印键值对
             });
             System.out.println((isAccepting ? "} is accepting" : "} is rejecting") + Colors.RESET); // 结束颜色并重置
@@ -144,7 +144,7 @@ public class SimpleTest {
                 String input = ast.toString();
                 System.out.println(input);
                 // visitor.visit(ParserUtils.parse(input));
-                // System.out.println("ATFA" + (new FOkATFA(vars, gs).accepts(visitor) ? " accepts" : " rejects")
+                // System.out.println("ATFA" + (new FOkATNFA(vars, gs).accepts(visitor) ? " accepts" : " rejects")
                         // + " the formula: " + input);
             } catch (Exception e) {
                 e.printStackTrace();

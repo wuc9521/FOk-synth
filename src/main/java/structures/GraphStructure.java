@@ -45,7 +45,7 @@ public class GraphStructure extends Structure<Integer> {
 
         public List<Edge> getEdges() {
             return this.getTuples().stream().map(tuple -> new Edge((Vertex) tuple.get(0), (Vertex) tuple.get(1)))
-            .toList();
+                    .toList();
         }
 
         public void addEdge(Edge edge) {

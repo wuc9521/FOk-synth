@@ -117,7 +117,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
                 bdVarTable.put(
                         ctx.VARIABLE(),
                         new Pair<>(fCtx.qop, fCtx.VARIABLE()));
-            } 
+            }
         }
         return visitChildren(ctx);
     }
@@ -252,7 +252,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
             if (pair == null) { // 说明该变量没有被赋值过, 不应该返回 null, 应该保持原样.
                 // DO NOTHING! Don't return null;
                 // yet I still return null 🤡
-                return null; // TODO: check here
+                return null;
             }
             TerminalNode var = tCtx.VARIABLE();
             assert this.assignment.getKvMap().containsKey(var.getText());
@@ -321,7 +321,7 @@ public class FOkVisitor<T> extends FOkParserBaseVisitor<Void> {
         return calTermVal(ctx);
     }
 
-    public FOkVisitor<T> copy(){
+    public FOkVisitor<T> copy() {
         FOkVisitor<T> newVisitor = new FOkVisitor<>(this.structure);
         newVisitor.assignment = this.assignment;
         newVisitor.bdVarTable = new HashMap<>(this.bdVarTable);
