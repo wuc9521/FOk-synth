@@ -74,6 +74,17 @@ public class ASTBuilder<T> {
 
     /**
      * return all the possible ASTs that can be grown from the given AST by one step
+     * @param astSet the set of ASTs that can be grown from
+     * @return all the possible ASTs that can be grown from the given AST by one step
+     */
+    public Set<AST> getAllRelationLiterals(){
+        Set<AST> result = new HashSet<>();
+        result.addAll(growbyType(new HashSet<>(), new AST(AST.FOk.FORMULA, "$T"), AST.FOk.RELATION));
+        return result;
+    }
+
+    /**
+     * return all the possible ASTs that can be grown from the given AST by one step
      * by type. This is SO DAMN elegant!
      * formula
      * : NOT formula
@@ -241,6 +252,6 @@ public class ASTBuilder<T> {
      */
     private List<List<String>> getTuplesFromPossibleTerms(int arity) {
         List<String> possibleTerms = this.getAllPossibleTermLiterals();
-        return TupleGenerator.generateKTuplesWithoutNull(arity, possibleTerms);
+        return TupleUtils.generateKTuplesWithoutNull(arity, possibleTerms);
     }
 }

@@ -65,7 +65,7 @@ public class FOkATNFA<T> extends NFA<Assignment, FormulaContext> {
     }
 
     private void generateStates() {
-        TupleGenerator.generateKTuples(vars.size(), new ArrayList<>(structure.domain)).forEach(tuple -> { // tuple:
+        TupleUtils.generateKTuples(vars.size(), new ArrayList<>(structure.domain)).forEach(tuple -> { // tuple:
             // List<Element>
             Map<String, Structure<?>.Element> kvMap = new HashMap<>();
             // HashMap<String, Structure<?>.Element> kvMap = new HashMap<>();
@@ -281,8 +281,9 @@ public class FOkATNFA<T> extends NFA<Assignment, FormulaContext> {
      * determinize the automaton
      */
     @Override
-    public FOkATDFA<T> determinize() {
-        return new FOkATDFA<>(this);
+    public DFA<Assignment, FormulaContext> determinize() {
+        FOkATDFA<T> dfa = new FOkATDFA<>(this);
+        return dfa;
     }
 
     /**
@@ -599,4 +600,13 @@ public class FOkATNFA<T> extends NFA<Assignment, FormulaContext> {
         return copy;
     }
 
+    /**
+     * get the possible inputs of the automaton
+     * @return the set of possible inputs
+     */
+    public Set<FormulaContext> getPossibleInputs() {
+        assert this.structure != null;
+        assert this.vars != null;
+        return new HashSet<>();
+    }
 }

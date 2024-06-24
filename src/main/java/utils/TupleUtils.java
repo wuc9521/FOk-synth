@@ -3,7 +3,7 @@ package utils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TupleGenerator {
+public class TupleUtils {
 
     public static <T> List<List<T>> generateKTuples(int k, List<T> values) {
         List<List<T>> results = new ArrayList<>();

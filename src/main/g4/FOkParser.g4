@@ -16,7 +16,7 @@ formula
     | RELATION (LPAREN term (COMMA term)* RPAREN)?
     | term EQUALS term        
     | value                    
-	| LPAREN formula RPAREN    
+    | LPAREN formula RPAREN    
     ;
 
 term

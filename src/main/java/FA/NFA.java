@@ -14,7 +14,7 @@ public abstract class NFA<SType, IType> extends FA<SType, IType> {
     /**
      * determinize the NFA to a DFA
      */
-    public abstract DFA<SType, IType> determinize(); // determinize the automaton
+    public abstract DFA<? extends SType, ? extends IType> determinize(); // determinize the automaton
 
     /**
      * @param state the state to transition from
