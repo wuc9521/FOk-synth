@@ -25,7 +25,7 @@ public class FOkATNFA<T> extends NFA<Assignment, FormulaContext> {
 
     @Setter
     protected TState initialState = new TState(null); // the initial state of the automaton
-    protected Set<TState> currentStates = new HashSet<>(); // the current state of the
+    protected volatile Set<TState> currentStates = new HashSet<>(); // the current state of the
                                                            // automaton
     protected FOkVisitor<T> visitor; // the visitor to visit the parse tree
     protected Structure<T> structure; // the structure for the automaton to run on
@@ -376,7 +376,7 @@ public class FOkATNFA<T> extends NFA<Assignment, FormulaContext> {
      * @return the similar states of the current states except for the given
      *         variable
      */
-    private List<TState> getSimilarStates(String var) {
+    public List<TState> getSimilarStates(String var) {
         List<TState> similarStates = this.states.stream().filter(
                 s -> this.currentStates.stream().anyMatch(
                         s_ -> s_.equalsExceptVar(s, var)
@@ -602,6 +602,7 @@ public class FOkATNFA<T> extends NFA<Assignment, FormulaContext> {
 
     /**
      * get the possible inputs of the automaton
+     * 
      * @return the set of possible inputs
      */
     public Set<FormulaContext> getPossibleInputs() {

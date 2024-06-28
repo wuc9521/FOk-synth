@@ -29,7 +29,6 @@ public class FOkATDFA<T> extends DFA<Assignment, FormulaContext> {
     private TState currentState = initialState;
     private FormulaContext currentFormula = null;
     private boolean lookingForTrueAssignment = true;
-    private HashMap<TState, HashMap<FormulaContext, TState>> transitions = new HashMap<>();
     private List<FOkATDFA<T>> subAutomata = new ArrayList<>();
     private Structure<T> structure;
     private FOkVisitor<T> visitor;
@@ -47,12 +46,6 @@ public class FOkATDFA<T> extends DFA<Assignment, FormulaContext> {
         this.structure = nfa.structure;
         this.visitor = nfa.visitor;
         this.builder = new ASTBuilder<>(this.structure, this.nfa.getVars());
-        // generate the power set of the nfa's states
-        System.out.println(this.nfa.states.size());
-        // Set<Set<FOkATNFA<T>.TState>> powerSet = SetUtils.powerSet(this.nfa.states);
-        // for (Set<FOkATNFA<T>.TState> set : powerSet) {
-        // this.transitions.put(new TState(set), new HashMap<>());
-        // } // TODO: 上面的太复杂, 算不了了
         for (AST formulaAST : this.builder.getAllRelationLiterals()) {
             String formula = formulaAST.toString();
             this.visitor.visit(ParserUtils.parse(formula));
@@ -129,34 +122,29 @@ public class FOkATDFA<T> extends DFA<Assignment, FormulaContext> {
      */
     @Override
     public DFA.State<Assignment> transition(DFA.State<Assignment> state, FormulaContext input) {
-        // TState tState = (TState) state;
-        // for (FOkATNFA<T>.TState s : tState.value) {
-        // if (nfa.transition(s, input) != null) {
-        // return null;
-        // }
-        // }
-        // return null;
         this.currentFormula = input;
-        TState tState = (TState) state;
+        if (this.formulaStack.isEmpty() || (this.formulaStack.peek() != this.currentFormula)) {
+            this.formulaStack.push(this.currentFormula);
+        }
         if (this.currentFormula == null) {
             return null;
         }
-
-        if (this.transitions.get(state) != null) {
-            return this.transitions.get(state).get(this.currentFormula);
-        }
         try {
-            if (this.currentFormula.NOT() != null) {
+            if (this.currentFormula.NOT() != null) { // do not change current state
                 this.lookingForTrueAssignment = !this.lookingForTrueAssignment;
-                this.currentState = (TState) this.transition(state, this.currentFormula.formula(0));
-            } else if (this.currentFormula.op != null) {
-                // this.currenState 还是当前的状态, 但是 currentFormula 变成了 op 的左边的那个.
+                this.formulaStack.push(this.currentFormula.formula(0));
+            } else if (this.currentFormula.op != null) { // do not change current state
+                this.subAutomata.clear();
+                for (int i = 0; i < 2; i++) {
+                    this.subAutomata.add(this.copy());
+                }
                 if (this.lookingForTrueAssignment) {
                     switch (this.currentFormula.op.getType()) {
                         case FOkParser.AND:
                             this.concurrentTransition(input);
                             break;
                         case FOkParser.OR:
+                            this.shortcutTransition(input);
                             break;
                         default:
                             break;
@@ -164,8 +152,10 @@ public class FOkATDFA<T> extends DFA<Assignment, FormulaContext> {
                 } else {
                     switch (this.currentFormula.op.getType()) {
                         case FOkParser.AND:
+                            this.shortcutTransition(input);
                             break;
                         case FOkParser.OR:
+                            this.concurrentTransition(input);
                             break;
                         default:
                             break;
@@ -185,6 +175,47 @@ public class FOkATDFA<T> extends DFA<Assignment, FormulaContext> {
         }
         return this.currentState;
         // 在 DFA 里, 这里不能一路递归到底, 只能递归一点点.
+    }
+
+    /**
+     * transition for the concurrent automata
+     * 
+     * @param input the input formula: formula op=(IFF | IMPLIES | AND | OR) formula
+     * @return the state that the automaton can transit to
+     * @throws Exception if the input formula is not valid
+     */
+    private void concurrentTransition(FormulaContext input) throws Exception {
+        assert this.subAutomata.size() == 2;
+        for (int i = 0; i < 2; i++) {
+            this.nfa.lookingForTrueAssignment = this.lookingForTrueAssignment;
+            if (!this.subAutomata.get(i).accepts(input.formula(i))) {
+                this.currentState = null;
+                return;
+            }
+        }
+    }
+
+    /**
+     * transition for the shortcut automata
+     * 
+     * @param input the input formula: formula op=(IFF | IMPLIES | AND | OR) formula
+     * @throws Exception if the input formula is not valid
+     */
+    private void shortcutTransition(FormulaContext input) throws Exception {
+        assert this.subAutomata.size() == 2;
+        Set<FOkATNFA<T>.TState> states = new HashSet<>();
+        for (int i = 0; i < 2; i++) {
+            if (this.subAutomata.get(i).accepts(input.formula(i))) {
+                if (this.subAutomata.get(i).currentState != null) {
+                    states.addAll(this.subAutomata.get(i).currentState.value);
+                }
+            }
+        }
+        if (states.isEmpty()) {
+            this.currentState = new TState();
+            return;
+        }
+        this.currentState = new TState(states);
     }
 
     /**
@@ -248,44 +279,6 @@ public class FOkATDFA<T> extends DFA<Assignment, FormulaContext> {
     }
 
     /**
-     * transition for the concurrent automata
-     * 
-     * @param input the input formula: formula op=(IFF | IMPLIES | AND | OR) formula
-     * @return the state that the automaton can transit to
-     * @throws Exception if the input formula is not valid
-     */
-    private void concurrentTransition(FormulaContext input) throws Exception {
-        assert this.subAutomata.size() == 2;
-        for (int i = 0; i < 2; i++) {
-            this.nfa.subAutomata.get(i).currentStates = this.currentState.value;
-            this.nfa.subAutomata.get(i).currentFormula = input.formula(i);
-            this.nfa.lookingForTrueAssignment = this.lookingForTrueAssignment;
-            if (!this.nfa.subAutomata.get(i).accepts(input.formula(i))) {
-                this.currentState = null;
-                return;
-            }
-        }
-    }
-
-    /**
-     * transition for the shortcut automata
-     * 
-     * @param input the input formula: formula op=(IFF | IMPLIES | AND | OR) formula
-     * @throws Exception if the input formula is not valid
-     */
-    private void shortcutTransition(FormulaContext input) throws Exception {
-        assert this.subAutomata.size() == 2;
-        // TODO: maybe the responsibility to copy() nfa is here.
-        Set<FOkATNFA<T>.TState> states = new HashSet<>();
-        for (int i = 0; i < 2; i++) {
-            if (this.nfa.subAutomata.get(i).accepts(input.formula(i))) {
-                states.addAll(this.nfa.subAutomata.get(i).currentStates);
-            }
-        }
-        this.currentState = new TState(states);
-    }
-
-    /**
      * handle the quantifier operator
      * 
      * @param input
@@ -300,8 +293,19 @@ public class FOkATDFA<T> extends DFA<Assignment, FormulaContext> {
         return this;
     }
 
-    // 要非常优雅地把这里的 NFA 给用上. 该用 NFA 来做的苦力要让 NFA来做. 比如说并发.
-    // 比如说 \exists xxx accept().
-}
+    private FOkATDFA<T> copy() {
+        FOkATDFA<T> copy = new FOkATDFA<>(this.nfa);
+        copy.states = this.states;
+        copy.initialState = this.currentState;
+        copy.currentFormula = this.currentFormula;
+        copy.lookingForTrueAssignment = this.lookingForTrueAssignment;
+        copy.subAutomata = this.subAutomata;
+        copy.structure = this.structure;
+        copy.visitor = this.visitor;
+        copy.builder = this.builder;
+        copy.AllRelFormulaCtx = this.AllRelFormulaCtx;
+        copy.formulaStack = this.formulaStack;
+        return copy;
+    }
 
-// TODO: 去了解一下 deterministic pushdown automata.
+}

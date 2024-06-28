@@ -50,10 +50,10 @@ test: compile
 	@echo ""
 	@echo "Running tests..."
 	@mkdir -p $(OUT)
-	@javac -cp $(CP) -d $(OUT) $(TEST)/SimpleTest.java 
-	@javac -cp $(CP) -d $(OUT) $(TEST)/FunctionTest.java 
+	@javac -cp $(CP) -d $(OUT) $(TEST)/*Test.java 
 	# @java -cp $(CP) org.junit.runner.JUnitCore SimpleTest
-	@java -cp $(CP) org.junit.runner.JUnitCore FunctionTest
+	# @java -cp $(CP) org.junit.runner.JUnitCore FunctionTest
+	@java -cp $(CP) org.junit.runner.JUnitCore NFATest
 	@echo "Done."
 
 wc: 
